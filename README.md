@@ -2,4 +2,4 @@
 
 Geradores grátis de modelos 3D (STL e 3MF) com prévia ao vivo no navegador.
 
-Site estático: o Cloudflare Pages publica a pasta raiz deste repositório a cada atualização.
+Site estático publicado pelo Cloudflare Workers: a pasta `public/` vai para o ar a cada atualização da branch `main`.
