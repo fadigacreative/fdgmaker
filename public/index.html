@@ -1914,7 +1914,7 @@ function defaults(it){const o={};for(const p of it.params){if(!p.k)continue;o[p.
 /* ================= VISUALIZAÇÃO 3D ================= */
 const hasGL=(()=>{try{return !!document.createElement("canvas").getContext("webgl")}catch(e){return false}})();
 function makeScene(){const scene=new THREE.Scene();scene.add(new THREE.HemisphereLight(0xffffff,0x667788,.95));const s=new THREE.DirectionalLight(0xffffff,.75);s.position.set(120,220,160);scene.add(s);const f=new THREE.DirectionalLight(0xffffff,.25);f.position.set(-150,80,-120);scene.add(f);return scene}
-const DEF_PAL=["#5AB4F2","#2C3A47","#F2EFE8","#D6FF27"],DEF_PAL_D=["#6EC3FF","#D9E1E8","#8E9AA6","#D6FF27"],pal={};
+const DEF_PAL=["#005BD4","#2C3A47","#F2EFE8","#D6FF27"],DEF_PAL_D=["#005BD4","#D9E1E8","#8E9AA6","#D6FF27"],pal={};
 const defPal=()=>isDark()?DEF_PAL_D:DEF_PAL,palOf=it=>pal[it.id]||(pal[it.id]=(it.palette||defPal()).slice());
 const mats=[0,1,2,3].map(()=>new THREE.MeshStandardMaterial({roughness:.55,metalness:.05,flatShading:true,side:THREE.DoubleSide}));
 function setMatColors(c){c.forEach((x,i)=>{if(mats[i])mats[i].color=new THREE.Color(x)})}
@@ -1954,7 +1954,7 @@ function viewer(){
 let TR=null;const thumbCache={};const thumbQ=[];let thumbBusy=false;
 function thumbRenderer(){if(TR||!hasGL)return TR;const r=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});r.setPixelRatio(1);r.setSize(420,280,false);r.setClearColor(0x000000,0);TR={r,scene:makeScene(),cam:new THREE.PerspectiveCamera(30,1.5,1,6000)};return TR}
 const isDark=()=>{const t=document.documentElement.dataset.theme;return t?t==="dark":matchMedia("(prefers-color-scheme: dark)").matches};
-function thumbKey(id){return "thumb11:"+id+":"+(isDark()?"d":"l")}
+function thumbKey(id){return "thumb12:"+id+":"+(isDark()?"d":"l")}
 function requestThumb(id){const k=thumbKey(id);if(thumbCache[k])return thumbCache[k];const st=LS.get(k,null);if(st){thumbCache[k]=st;return st}if(!thumbQ.includes(id))thumbQ.push(id);pumpThumbs();return null}
 function pumpThumbs(){if(thumbBusy||!thumbQ.length||!hasGL)return;thumbBusy=true;const id=thumbQ.shift();
   setTimeout(async()=>{try{const it=byId[id];const parts=await it.build(defaults(it));const st=prepParts(parts);const t=thumbRenderer();setMatColors(it.palette||defPal());
