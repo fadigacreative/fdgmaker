@@ -1963,7 +1963,7 @@ const ITEMS=[
   const top=g=>{let y=y0+(av-tot)/2;if(mi){textAt(mi,ic,W/2,y+mi.h/2)(g);y+=mi.h+gap}if(m1){textAt(m1,l1,W/2,y+m1.h/2)(g);y+=m1.h+gap}if(m2)textAt(m2,l2,W/2,y+m2.h/2)(g)};
   return tone(p.duas,W,H,autoRes(W,H,5),[{h:p.esp,draw:g=>{rrect(g,0,0,W,H,8);cut(g,gg=>{circle(gg,W/2,hy,r);gg.save();gg.translate(W/2,hy);gg.rotate(-.6);gg.fillRect(-W,-5,W,10);gg.restore()})}}],p.esp,[{h:p.rel,draw:top}],["placa","texto"]);
  }},
-{id:"letra-caixa",name:"Letra caixa",kind:"modelo",cats:["negocio","placas","personalizados"],rank:3,added:61,tags:["novo"],intro:"letra-caixa",
+{id:"letra-caixa",name:"Letra caixa",kind:"modelo",perPart:true,cats:["negocio","placas","personalizados"],rank:3,added:61,tags:["novo"],intro:"letra-caixa",
  desc:"Letras ocas para fachada e decoração, com espaço para fita LED. Face impressa ou em acrílico (DXF de corte), luz pela frente ou por trás e furos de fixação.",
  tips:{"Caixa":"Paredes 3, preenchimento 10%","Face impressa":"PETG ou PLA branco translúcido, 0,2 mm","LED":"Fita 5 V ou 12 V de até 10 mm","Montagem":"Fio passa pelo furo do fundo"},
  params:[G("Conteúdo"),SEG("fonteTipo","Conteúdo","texto",[["texto","Texto"],["imagem","Logo (imagem)"]]),T("texto","Texto","LOJA",{max:16,show:p=>p.fonteTipo!=="imagem"}),FSEL("fonte","Fonte","heavy",{show:p=>p.fonteTipo!=="imagem"}),
@@ -2549,7 +2549,7 @@ async function run(){
     const st=prepParts(parts);lastParts=parts;lastStats=st;
     const v=viewer();if(v){v.set(parts,st,needFit)}needFit=false;
     $("#dx").textContent=nf(st.sx);$("#dy").textContent=nf(st.sy);$("#dz").textContent=nf(st.sz);$("#tris").textContent=st.tris.toLocaleString(LOC)+" triângulos";
-    const big=st.sx>BED||st.sy>BED||st.sz>BED;busy.className=big?"busy err":"busy";busy.textContent=big?`Maior que a mesa de ${BED} mm`:"";
+    const big=it.perPart?parts.some(q=>{const b=bbox(q.pos);return Math.max(b.mx[0]-b.mn[0],b.mx[1]-b.mn[1],b.mx[2]-b.mn[2])>BED}):st.sx>BED||st.sy>BED||st.sz>BED;busy.className=big?"busy err":"busy";busy.textContent=big?`Maior que a mesa de ${BED} mm`:"";
     renderParts(parts);renderEstimate(st);$("#gTips").innerHTML=(raw.info||Object.entries(it.tips)).map(([k,v])=>`<div><span>${esc(k)}</span><span>${esc(v)}</span></div>`).join("");LS.set("lastWeight",estimate(st).grams);
   }catch(e){if(my!==genToken)return;busy.className="busy err";busy.textContent=e&&e.message?e.message:"Não foi possível gerar com esses valores.";console.error(e)}
 }
