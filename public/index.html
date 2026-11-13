@@ -2301,14 +2301,14 @@ document.querySelectorAll(".curSel").forEach(sel=>{sel.innerHTML=CURS.map(c=>`<o
 
 /* ================= APOIAR ================= */
 /* Cole aqui os links de pagamento do dono do site. Só aparece na página o que estiver preenchido. */
-const SUPPORT={stripe:"",paypal:"",kofi:"",pix:{key:"",name:"",city:""}};
+const SUPPORT={stripe:"",paypal:"",kofi:"",pix:{key:"7b7d5b5e-0434-4e32-82cb-f26a19f3f9aa",name:"LUIZ G DE C C FADIGA",city:"SAO JOAO DA B",code:"00020101021126580014br.gov.bcb.pix01367b7d5b5e-0434-4e32-82cb-f26a19f3f9aa5204000053039865802BR5920LUIZ G DE C C FADIGA6013SAO JOAO DA B62070503***6304DAF5"}};
 function renderSupport(){const c=[],card=(eye,title,txt,href,btn,pro)=>`<div class="plan${pro?" pro":""}"><p class="eyebrow">${eye}</p><h3 style="font-size:22px">${title}</h3><p class="muted">${txt}</p><a class="btn${pro?" primary":""}" href="${esc(href)}" target="_blank" rel="noopener">${btn}</a></div>`;
   if(SUPPORT.stripe)c.push(card("Qualquer país","Cartão, Apple Pay ou Google Pay","Você escolhe o valor e paga na sua moeda.",SUPPORT.stripe,"Apoiar com cartão",true));
   if(SUPPORT.paypal)c.push(card("Qualquer país","PayPal","Use o saldo ou o cartão da sua conta PayPal.",SUPPORT.paypal,"Apoiar com PayPal"));
   if(SUPPORT.kofi)c.push(card("Qualquer país","Ko-fi","Um café avulso, sem assinatura.",SUPPORT.kofi,"Abrir o Ko-fi"));
   if(SUPPORT.pix.key)c.push(`<div class="plan"><p class="eyebrow">Brasil</p><h3 style="font-size:22px">Pix</h3><canvas id="pixQr" width="180" height="180" style="border-radius:8px;max-width:100%"></canvas><p class="note" data-noi18n id="pixCode" style="word-break:break-all;user-select:all"></p><button class="btn" type="button" id="pixCopy">Copiar código Pix</button></div>`);
   $("#supportGrid").innerHTML=c.join("")||`<div class="plan" style="grid-column:1/-1"><h3 style="font-size:20px">Links de apoio ainda não configurados</h3><p class="muted">Esta página já está pronta. Falta só colar no código os links de pagamento do dono do site: Stripe (cartão, em qualquer país), PayPal, Ko-fi e a chave Pix.</p></div>`;
-  if(SUPPORT.pix.key&&typeof qrcode!=="undefined"){const code=pixPayload(SUPPORT.pix.key,SUPPORT.pix.name,SUPPORT.pix.city,0),qr=qrcode(0,"M");qr.addData(code);qr.make();
+  if(SUPPORT.pix.key&&typeof qrcode!=="undefined"){const code=SUPPORT.pix.code||pixPayload(SUPPORT.pix.key,SUPPORT.pix.name,SUPPORT.pix.city,0),qr=qrcode(0,"M");qr.addData(code);qr.make();
     const n=qr.getModuleCount(),g=$("#pixQr").getContext("2d"),m=180/(n+4);g.fillStyle="#fff";g.fillRect(0,0,180,180);g.fillStyle="#000";for(let r=0;r<n;r++)for(let k=0;k<n;k++)if(qr.isDark(r,k))g.fillRect((k+2)*m,(r+2)*m,m+.3,m+.3);
     $("#pixCode").textContent=code;$("#pixCopy").onclick=async()=>{try{await navigator.clipboard.writeText(code);toast("Código Pix copiado")}catch(e){toast("Selecione o código e copie.")}}}
 }
