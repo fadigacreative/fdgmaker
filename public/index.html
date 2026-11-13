@@ -18,7 +18,7 @@
 
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Pacifico&family=Bungee&family=Lilita+One&family=Baloo+2:wght@800&family=Lobster&family=Permanent+Marker&family=Righteous&family=Bebas+Neue&family=Comfortaa:wght@700&family=Black+Ops+One&family=Press+Start+2P&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Montserrat:wght@800&family=Archivo+Black&family=Fredoka:wght@700&family=Baloo+2:wght@800&family=Titan+One&family=Luckiest+Guy&family=Pacifico&family=Dancing+Script:wght@700&family=Lobster&family=Kaushan+Script&family=Permanent+Marker&family=Playfair+Display:wght@800&family=Abril+Fatface&family=Bungee&family=Righteous&family=Bebas+Neue&family=Comfortaa:wght@700&family=Black+Ops+One&display=swap">
 <style>
 /* Layout: site com rotas por #hash. Cabeçalho fixo com busca; catálogo com filtros laterais; editor = painel de parâmetros + mesa 3D de 256 mm. */
 :root{
@@ -190,6 +190,15 @@ select.sel,input.inp{font:14px var(--f-body);padding:9px 11px;border:1px solid v
 .field input[type=range]{width:100%;accent-color:var(--accent-fg)}
 .field.check > label{justify-content:flex-start;gap:8px;cursor:pointer}
 .field.check input{accent-color:var(--accent-fg);width:16px;height:16px}
+.optlist{display:grid;gap:6px}
+.gehelp{font-size:12.5px;line-height:1.45;color:var(--muted);background:var(--sunk);border-radius:10px;padding:10px 12px}
+.gehelp b{color:var(--ink);font-weight:600}
+.gehelp ol{margin:4px 0 0;padding-left:18px;display:grid;gap:2px}
+.optlist button{display:grid;gap:2px;text-align:left;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:9px 12px;border-radius:10px;cursor:pointer;font:inherit}
+.optlist button b{font:600 13.5px/1.25 var(--f-body)}
+.optlist button small{font-size:12px;line-height:1.35;color:var(--muted)}
+.optlist button:hover{border-color:var(--accent-fg)}
+.optlist button[aria-pressed="true"]{border-color:var(--accent-fg);background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent-fg)}
 .seg{display:flex;flex-wrap:wrap;gap:4px;background:var(--sunk);padding:3px;border-radius:9px}
 .seg button{flex:1;border:0;background:transparent;color:var(--muted);font:600 12.5px var(--f-body);padding:8px 6px;border-radius:7px;cursor:pointer;white-space:nowrap}
 .seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 0 var(--line)}
@@ -197,6 +206,9 @@ select.sel,input.inp{font:14px var(--f-body);padding:9px 11px;border:1px solid v
 .file.drag{border-color:var(--accent-fg)}
 .file .fname{font:12px var(--f-mono);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .file .fbtns{display:flex;gap:6px;flex-wrap:wrap}
+.pcolors{padding:14px 18px;border-top:1px solid var(--line);display:grid;gap:8px;background:var(--sunk)}
+.pc-title{font:600 13px/1.2 var(--f-display);letter-spacing:.01em}
+.pcolors .parts{max-height:150px;overflow:auto}
 .panel .foot{margin-top:auto;padding:14px 18px;border-top:1px solid var(--line);display:grid;gap:8px}
 .stage{position:relative;min-height:560px;background:var(--plate);min-width:0}
 .stage canvas{display:block;width:100%;height:100%;position:absolute;inset:0}
@@ -214,7 +226,7 @@ select.sel,input.inp{font:14px var(--f-body);padding:9px 11px;border:1px solid v
   .stage{min-height:380px}
   .params{max-height:none}
 }
-.ginfo{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:14px}
+.ginfo{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:14px}
 @media (max-width:900px){.ginfo{grid-template-columns:1fr}}
 .card{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);padding:18px;min-width:0}
 .card h3{font-size:16px;font-weight:700;margin-bottom:10px}
@@ -425,6 +437,7 @@ footer .legal{border-top:1px solid var(--line);padding-block:16px;font-size:12.5
     <div class="editor">
       <div class="panel">
         <div class="params" id="params"></div>
+        <div class="pcolors"><p class="pc-title">Peças e cores</p><div class="parts" id="gParts"></div><p class="note" id="gPartsNote"></p></div>
         <div class="foot">
           <div class="seg" id="fmt" role="group" aria-label="Formato do arquivo"><button type="button" data-v="stl">STL</button><button type="button" data-v="3mf">3MF</button><button type="button" data-v="3mfc">3MF colorido</button></div>
           <button class="btn primary" id="dl" type="button">Baixar STL</button>
@@ -442,7 +455,6 @@ footer .legal{border-top:1px solid var(--line);padding-block:16px;font-size:12.5
     <div class="ginfo">
       <div class="card"><h3>Como imprimir</h3><div class="kv" id="gTips"></div></div>
       <div class="card"><h3>Estimativa</h3><div class="kv" id="gEst"></div><p class="note" style="margin-top:10px">PLA 1,24 g/cm³ com os valores da sua <a href="#custos">calculadora de custos</a>.</p></div>
-      <div class="card"><h3>Peças e cores</h3><div class="parts" id="gParts"></div><p class="note" style="margin-top:10px" id="gPartsNote"></p></div>
     </div>
     <aside class="ad" aria-label="Espaço publicitário">Espaço publicitário</aside>
     <div class="sec">
@@ -614,6 +626,38 @@ new MutationObserver(ms=>{for(const m of ms){if(m.type==="characterData")trNode(
 /* ================= GEOMETRIA ================= */
 let QUAL=1;
 function autoRes(w,h,want,budget){budget=(budget||420000)*QUAL*QUAL;return Math.max(1.5,Math.min(want*QUAL,Math.sqrt(budget/Math.max(1,w*h))))}
+/* suaviza o contorno em escada: cada vértice de borda vai para a média ponderada do contorno vizinho (máx. 0,45 célula, sem inverter faces) */
+let SHARP=false;
+function smoothGrid(P,W,H,c,occ){
+  if(SHARP)return P;
+  const eps=.004,cache=new Map();
+  const co=(X,L,z)=>(X<0||L<0||X>=W||L>=H)?0:(occ(L*W+X,z)?1:0);
+  const pat=(X,L,z)=>co(X-1,L-1,z)|co(X,L-1,z)<<1|co(X-1,L,z)<<2|co(X,L,z)<<3;
+  const edges=p=>{const a=p&1,b=p>>1&1,d=p>>2&1,e=p>>3&1,o=[];if(a!==b)o.push([0,-1]);if(d!==e)o.push([0,1]);if(a!==d)o.push([-1,0]);if(b!==e)o.push([1,0]);return o};
+  const walk=(X,L,dx,dy,z)=>{const o=[];for(let s=0;s<3;s++){X+=dx;L+=dy;o.push([X,L]);const e=edges(pat(X,L,z));if(e.length!==2)break;const nx=e.find(v=>!(v[0]===-dx&&v[1]===-dy));if(!nx)break;dx=nx[0];dy=nx[1]}return o};
+  const Wt=[1,.62,.26,.08],m=.45;
+  const target=(X,L,z)=>{const e=edges(pat(X,L,z));if(e.length!==2)return null;const A=walk(X,L,e[0][0],e[0][1],z),B=walk(X,L,e[1][0],e[1][1],z),n=Math.min(A.length,B.length);if(!n)return null;
+    let sx=X,sy=L,sw=1;for(let k=0;k<n;k++){sx+=(A[k][0]+B[k][0])*Wt[k+1];sy+=(A[k][1]+B[k][1])*Wt[k+1];sw+=2*Wt[k+1]}
+    return [Math.max(-m,Math.min(m,sx/sw-X)),Math.max(-m,Math.min(m,sy/sw-L))]};
+  const mixed=p=>p!==0&&p!==15;
+  const nv=P.length/3,ref=new Array(nv);
+  for(let v=0;v<nv;v++){const i=v*3,fx=P[i]/c,fl=H-P[i+1]/c,X=Math.round(fx),L=Math.round(fl);if(Math.abs(fx-X)>1e-3||Math.abs(fl-L)>1e-3){ref[v]=null;continue}
+    const z=P[i+2],key=X+","+L+","+z;let d=cache.get(key);
+    if(d===undefined){d=null;const pb=pat(X,L,z-eps),pa=pat(X,L,z+eps);
+      if(mixed(pb)&&mixed(pa)){if(pb===pa)d=target(X,L,z-eps)}else if(mixed(pb))d=target(X,L,z-eps);else if(mixed(pa))d=target(X,L,z+eps);
+      if(d)d=[d[0]*c,-d[1]*c];cache.set(key,d)}
+    ref[v]=d}
+  /* faces planas não podem virar: reduz o deslocamento dos vértices de qualquer triângulo que inverteria */
+  const O=P.slice(),ar=(a,b,d,Q)=>(Q[b]-Q[a])*(Q[d+1]-Q[a+1])-(Q[b+1]-Q[a+1])*(Q[d]-Q[a]);
+  for(let it=0;it<30;it++){
+    for(let v=0;v<nv;v++){const d=ref[v],i=v*3;P[i]=O[i]+(d?d[0]:0);P[i+1]=O[i+1]+(d?d[1]:0)}
+    if(it===29)break;let bad=0;
+    for(let t=0;t<P.length;t+=9){if(O[t+2]!==O[t+5]||O[t+2]!==O[t+8])continue;const a0=ar(t,t+3,t+6,O);if(a0===0)continue;const a1=ar(t,t+3,t+6,P);
+      if(a0*a1<=0||Math.abs(a1)<Math.abs(a0)*.05){for(let k=0;k<3;k++){const d=ref[t/3+k];if(d&&(d[0]||d[1])){bad++;d[0]*=it<4?.5:0;d[1]*=it<4?.5:0}}}}
+    if(!bad)break}
+  if(window.__DBG){let f=0;for(let t=0;t<P.length;t+=9){if(O[t+2]!==O[t+5]||O[t+2]!==O[t+8])continue;if(ar(t,t+3,t+6,O)*ar(t,t+3,t+6,P)<=0)f++}console.log("SMOOTHFLIP",f,P.length/9)}
+  return P;
+}
 function heightfield(wMm,hMm,res,layers){
   const W=Math.max(1,Math.ceil(wMm*res)),H=Math.max(1,Math.ceil(hMm*res)),c=1/res;
   const hi=new Float32Array(W*H),lo=new Float32Array(W*H);
@@ -632,8 +676,8 @@ function heightfield(wMm,hMm,res,layers){
     for(let r=0;r<H-1;r++)for(let x=0;x<W-1;x++){const A=r*W+x,B=A+1,C=A+W,D=C+1;
       for(const [p1,p2,q1,q2] of [[A,D,B,C],[B,C,A,D]]){
         if(hi[p1]>lo[p1]&&hi[p2]>lo[p2]){const top=Math.min(hi[p1],hi[p2]),bot=Math.max(lo[p1],lo[p2]);if(top<=bot+1e-6)continue;
-          const h1=hi[q1]>lo[q1]?hi[q1]:-1,h2=hi[q2]>lo[q2]?hi[q2]:-1;
-          if(h1<top-1e-6&&h2<top-1e-6){const t=h1>=h2?q1:q2;if(!(hi[t]>lo[t]))lo[t]=bot;hi[t]=top;ch++}}}}
+          const cov=q=>hi[q]>lo[q]&&lo[q]<=bot+1e-6&&hi[q]>=top-1e-6;
+          if(!cov(q1)&&!cov(q2)){const s1=hi[q1]>lo[q1]?hi[q1]-lo[q1]:-1,s2=hi[q2]>lo[q2]?hi[q2]-lo[q2]:-1,t=s1>=s2?q1:q2;if(!(hi[t]>lo[t])){lo[t]=bot;hi[t]=top}else{lo[t]=Math.min(lo[t],bot);hi[t]=Math.max(hi[t],top)}ch++}}}}
     if(!ch)break}
   /* Malha fechada: toda aresta é dividida nos mesmos pontos por todas as faces que a tocam. */
   const P=[];const q=(ax,ay,az,bx,by,bz,cx,cy,cz)=>{P.push(ax,ay,az,bx,by,bz,cx,cy,cz)};
@@ -665,7 +709,7 @@ function heightfield(wMm,hMm,res,layers){
       if(As&&!(Bs&&same(A,B)))for(const [a,b] of diff(A,B))wall(x*c,Y,x,L,e*c,Y,e,L,a,b);
       if(Bs&&!(As&&same(A,B)))for(const [a,b] of diff(B,A))wall(e*c,Y,e,L,x*c,Y,x,L,a,b);
       x=e}}
-  return new Float32Array(P);
+  return smoothGrid(new Float32Array(P),W,H,c,(i,z)=>hi[i]>lo[i]&&z>lo[i]&&z<hi[i]);
 }
 /* máscara de pixels a partir de um desenho em mm */
 function maskOf(wMm,hMm,res,draw){
@@ -783,10 +827,12 @@ const SHAPES={
 const shapeOpts=ids=>ids.map(i=>[i,SHAPES[i].n]);
 
 /* texto */
-const FONTS={display:{n:"Moderna",f:s=>`800 ${s}px "Bricolage Grotesque", sans-serif`},round:{n:"Arredondada",f:s=>`400 ${s}px "Lilita One", sans-serif`},balao:{n:"Balão",f:s=>`800 ${s}px "Baloo 2", sans-serif`},
-  script:{n:"Cursiva",f:s=>`400 ${s}px "Pacifico", cursive`},lobster:{n:"Cursiva retrô",f:s=>`400 ${s}px "Lobster", cursive`},marker:{n:"Pincel",f:s=>`400 ${s}px "Permanent Marker", cursive`},
+const FONTS={display:{n:"Moderna",f:s=>`800 ${s}px "Montserrat", sans-serif`},heavy:{n:"Bold pesada",f:s=>`400 ${s}px "Archivo Black", sans-serif`},round:{n:"Arredondada",f:s=>`700 ${s}px "Fredoka", sans-serif`},balao:{n:"Balão",f:s=>`800 ${s}px "Baloo 2", sans-serif`},
+  titan:{n:"Desenho animado",f:s=>`400 ${s}px "Titan One", sans-serif`},lucky:{n:"Gibi",f:s=>`400 ${s}px "Luckiest Guy", sans-serif`},
+  script:{n:"Cursiva",f:s=>`400 ${s}px "Pacifico", cursive`},dancing:{n:"Cursiva elegante",f:s=>`700 ${s}px "Dancing Script", cursive`},lobster:{n:"Cursiva retrô",f:s=>`400 ${s}px "Lobster", cursive`},kaushan:{n:"Pincel cursivo",f:s=>`400 ${s}px "Kaushan Script", cursive`},marker:{n:"Pincel",f:s=>`400 ${s}px "Permanent Marker", cursive`},
+  serif:{n:"Clássica",f:s=>`800 ${s}px "Playfair Display", serif`},abril:{n:"Revista",f:s=>`400 ${s}px "Abril Fatface", serif`},
   block:{n:"Bloco",f:s=>`400 ${s}px "Bungee", sans-serif`},righteous:{n:"Retrô",f:s=>`400 ${s}px "Righteous", sans-serif`},bebas:{n:"Condensada",f:s=>`400 ${s}px "Bebas Neue", sans-serif`},
-  comfortaa:{n:"Geométrica",f:s=>`700 ${s}px "Comfortaa", sans-serif`},stencil:{n:"Militar (estêncil)",f:s=>`400 ${s}px "Black Ops One", sans-serif`},pixel:{n:"Pixel",f:s=>`400 ${s}px "Press Start 2P", monospace`}};
+  comfortaa:{n:"Geométrica",f:s=>`700 ${s}px "Comfortaa", sans-serif`},stencil:{n:"Militar (estêncil)",f:s=>`400 ${s}px "Black Ops One", sans-serif`}};
 let userFontN=0;
 const fontOpts=ids=>ids.map(i=>[i,FONTS[i].n]);
 const measCtx=document.createElement("canvas").getContext("2d");
@@ -930,7 +976,7 @@ function colmesh(W,H,c,cnt,iv,K){
       if(sol(A)&&!same(A,B))for(const [a,b] of diff(A,B))wall(x*c,Y,x,L,e*c,Y,e,L,a,b);
       if(sol(B)&&!same(A,B))for(const [a,b] of diff(B,A))wall(e*c,Y,e,L,x*c,Y,x,L,a,b);
       x=e}}
-  return new Float32Array(P);
+  return smoothGrid(new Float32Array(P),W,H,c,(i,z)=>{for(let k=0;k<n(i);k++)if(z>iv[i*2*K+2*k]&&z<iv[i*2*K+2*k+1])return true;return false});
 }
 
 /* ================= BANDEJA: GRADE DE DIVISÓRIAS ================= */
@@ -961,9 +1007,10 @@ async function buildTray(p){
   const lip=gf&&p.labio,lipP=e=>e<1.9?4.4-e:e<2.6?.7-(e-1.9):0;
   const leaves=[],divs=[];layoutTree(p.grid,wall,wall,W-2*wall,D-2*wall,t,leaves,divs);
   const cells=leaves.map(L=>({x0:L.x,y0:L.y,x1:L.x+L.w,y1:L.y+L.h,r:Math.max(0,Math.min(p.raio,L.w/2-.05,L.h/2-.05)),f:Math.max(0,Math.min(L.n.f||0,partTop-floorTop-.4))}));
-  const lab=p.etiqueta&&!gf,lw=Math.min(p.etL,W-2*Ro-8),lh=Math.min(p.etH,H-floorTop-5),rail=1.6,gS=1.2,tf=1.2,fy=lab?gS+tf:0;
+  const puxT=gf?"nenhum":p.puxador===true?"recorte":p.puxador===false||!p.puxador?"nenhum":p.puxador,pullOut=puxT==="aba"||puxT==="alca";
+  const lab=p.etiqueta&&!gf,lw=Math.min(p.etL,W-2*Ro-8),lh=Math.min(p.etH,H-floorTop-5),rail=1.6,gS=1.2,tf=1.2,fyL=lab?gS+tf:0,fy=Math.max(fyL,pullOut?p.puxH+.5:0);
   const lx=p.etPos==="esq"?Ro+4+lw/2+rail:p.etPos==="dir"?W-Ro-4-lw/2-rail:W/2,fx0=lx-lw/2-rail,fx1=lx+lw/2+rail,zt=H-1,zb=zt-lh-1.6;
-  const pull=p.puxador&&!gf,pullX=lab&&p.etPos==="centro"?(lx+lw/2+rail+p.puxL/2+6<W-Ro?lx+lw/2+rail+p.puxL/2+6:W/2):W/2;
+  const pull=puxT!=="nenhum",pullX=lab&&p.etPos==="centro"?(lx+lw/2+rail+p.puxL/2+6<W-Ro?lx+lw/2+rail+p.puxL/2+6:W/2):W/2;
   const handle=p.modo==="transporte",hb=Math.max(t,3.2),hTop=H+30,hL=Math.min(110,W*.55),hr=9;
   const sk=p.modo==="skadis",skB=sk?9:0,skN=Math.max(1,Math.floor((W-16)/40)+1),skX0=W/2-(skN-1)*20,skT=H-2,mount=p.modo==="parede",mExt=30,kxs=W>90?[W*.25,W*.75]:[W/2],kz=H+mExt-14;
   let pat=null;
@@ -977,7 +1024,11 @@ async function buildTray(p){
     let lo=e>=2.95?0:e>=2.15?2.95-e:e>=0?2.6+(2.15-e):4.75;
     if(p.ima){const cx=ux+20.75,cy=uy+20.75;for(const [dx,dy] of [[-13,-13],[13,-13],[-13,13],[13,13]])if(Math.hypot(x-cx-dx,y-cy-dy)<3.25)lo=Math.max(lo,2.4)}return lo};
   const fn=(x,y)=>{
-    if(y<0){if(!lab||x<fx0||x>fx1||y<-fy)return null;const dw=-y,lo=Math.max(0,zb-fy+dw),ledge=zb+1.6;
+    if(y<0&&pullOut&&Math.abs(x-pullX)<p.puxL/2+.01&&y>=-p.puxH){const dw=-y,L2=p.puxL/2,u=Math.abs(x-pullX);
+      if(sdRR(x,y,pullX-L2,-p.puxH,pullX+L2,6,Math.min(4,L2))<0)return null;
+      if(puxT==="aba")return [[Math.max(0,H-3-(p.puxH-dw)),H]];
+      const post=u>L2-3,bar=dw>p.puxH-3;if(!post&&!bar)return null;return [[Math.max(0,H-16-(p.puxH-dw)),H]]}
+    if(y<0){if(!lab||x<fx0||x>fx1||y<-fyL)return null;const dw=-y,lo=Math.max(0,zb-fyL+dw),ledge=zb+1.6;
       if(x<fx0+rail||x>fx1-rail)return [[lo,zt]];if(dw<=gS)return [[lo,ledge]];if(x<fx0+rail+2||x>fx1-rail-2)return [[lo,zt]];return [[lo,ledge+1.4]]}
     if(y>D){if(!sk)return null;const kk=Math.round((x-skX0)/40);if(kk<0||kk>=skN||Math.abs(x-(skX0+kk*40))>2.2)return null;const dy=y-D,zl=Math.max(1,skT-12);return dy<=5.3?[[zl,skT]]:dy<=8.3?[[Math.max(.5,zl-(dy-5.3)),skT]]:null}
     const eo=sdRR(x,y,0,0,W,D,Ro);if(eo<0)return null;
@@ -990,7 +1041,8 @@ async function buildTray(p){
       if(mount&&sd&&sd[0]==="b"){const u=Math.min(x,W-x);top=H+mExt-(u<8?8-Math.sqrt(64-(8-u)*(8-u)):0)}
       let s=[[lo,top]];
       if(sd){const [k,v]=sd;
-        if(pull&&k==="f"&&Math.abs(v-pullX)<p.puxL/2){const r=p.puxL/2,u=v-pullX;s=ivSub(s,H-p.puxH+r-Math.sqrt(Math.max(0,r*r-u*u)),top+1)}
+        if(puxT==="recorte"&&k==="f"&&Math.abs(v-pullX)<p.puxL/2){const r=p.puxL/2,u=v-pullX;s=ivSub(s,H-p.puxH+r-Math.sqrt(Math.max(0,r*r-u*u)),top+1)}
+        if(puxT==="furo"&&k==="f"&&Math.abs(v-pullX)<p.puxL/2){const hh0=Math.min(p.puxH,H-floorTop-6)/2;if(hh0>1){const L2=p.puxL/2,r=Math.min(hh0,L2),u=Math.abs(v-pullX),cz=H-4-hh0,hh=u<=L2-r?r:Math.sqrt(Math.max(0,r*r-(u-(L2-r))**2));if(hh>0)s=ivSub(s,cz-hh,cz+hh)}}
         if(mount&&k==="b")for(const kx of kxs){const u=Math.abs(v-kx);if(u<4.5){const lo2=kz-3-Math.sqrt(20.25-u*u),hi2=u<2.25?kz+5+Math.sqrt(5.06-u*u):kz-3+Math.sqrt(20.25-u*u);s=ivSub(s,lo2,hi2)}}
         const skip=(k==="b"&&mount)||(k==="f"&&((lab&&v>fx0-3&&v<fx1+3)||(pull&&Math.abs(v-pullX)<p.puxL/2+3)));
         if(pat&&!skip)for(const row of (k==="f"||k==="b")?pat.rowsX:pat.rowsY){const kk=Math.round((v-row.s0)/pat.px);if(kk<0||kk>=row.n)continue;const u=Math.abs(v-(row.s0+kk*pat.px));
@@ -1012,11 +1064,11 @@ async function buildTray(p){
 const gridHist={};let gridSel=null;
 function gridEditor(f,p,s){
   const key=cur.id;gridHist[key]=gridHist[key]||[];
-  f.innerHTML=`<label>${esc(p.label)}</label><div class="ge"><canvas class="gecv" aria-label="Editor das divisórias"></canvas>
+  f.innerHTML=`<label>${esc(p.label)}</label><div class="ge"><div class="gehelp"><b>Como montar</b><ol><li>Clique num compartimento para selecionar.</li><li>Use Dividir ↔ ou Dividir ↕ (ou clique duplo) para criar novas divisões.</li><li>Arraste as linhas para mudar o tamanho de cada espaço.</li><li>Remover junta com o vizinho. Igualar deixa os espaços do mesmo tamanho.</li><li>Com um compartimento selecionado, suba o fundo dele para alcançar peças pequenas.</li></ol></div><canvas class="gecv" aria-label="Editor das divisórias"></canvas>
    <div class="gebar"><button class="btn sm" type="button" data-op="x" title="Divide o compartimento selecionado lado a lado">Dividir ↔</button><button class="btn sm" type="button" data-op="y" title="Divide o compartimento selecionado em cima e embaixo">Dividir ↕</button>
    <button class="btn sm ghost" type="button" data-op="rm">Remover</button><button class="btn sm ghost" type="button" data-op="eq">Igualar</button><button class="btn sm ghost" type="button" data-op="undo">Desfazer</button></div>
    <select class="sel gepre" aria-label="Modelos de divisão"><option value="">Modelos de divisão…</option>${Object.keys(TRAY_PRESETS).map(k=>`<option value="${esc(k)}">${esc(k)}</option>`).join("")}</select>
-   <div class="gecell"></div><small class="hint">Clique num compartimento para selecionar e arraste as linhas para mudar o tamanho. Clique duplo divide o compartimento.</small></div>`;
+   <div class="gecell"></div></div>`;
   const cv=f.querySelector("canvas"),g=cv.getContext("2d"),cellBox=f.querySelector(".gecell");
   const push=()=>{const h=gridHist[key];h.push(JSON.stringify(s[p.k]));if(h.length>60)h.shift()};
   const all=()=>{const L=[];(function w(n){if(!n.c)L.push(n);else n.c.forEach(w)})(s[p.k]);return L};
@@ -1026,7 +1078,7 @@ function gridEditor(f,p,s){
     const cw=cv.clientWidth||300,pad=10,sc=Math.min((cw-2*pad)/d.W,260/d.D),ch=d.D*sc+2*pad;cv.style.height=ch+"px";const dpr=2;cv.width=cw*dpr;cv.height=ch*dpr;
     geo={...d,wall,leaves,divs,sc,pad,ox:(cw-d.W*sc)/2,dpr,ch}};
   const X=x=>geo.ox+x*geo.sc,Y=y=>geo.pad+(geo.D-y)*geo.sc;
-  const draw=()=>{compute();const G=geo;g.setTransform(G.dpr,0,0,G.dpr,0,0);g.clearRect(0,0,cv.width,cv.height);
+  const draw=keep=>{compute();const G=geo;g.setTransform(G.dpr,0,0,G.dpr,0,0);g.clearRect(0,0,cv.width,cv.height);
     const acc=css("--accent"),accF=css("--accent-fg"),ink=css("--ink"),mut=css("--muted"),srf=css("--surface"),ln=css("--line");
     const rr=(x0,y0,x1,y1,r)=>{g.beginPath();const w=(x1-x0)*G.sc,h=(y1-y0)*G.sc;if(g.roundRect)g.roundRect(X(x0),Y(y1),w,h,Math.max(0,Math.min(r*G.sc,w/2,h/2)));else g.rect(X(x0),Y(y1),w,h)};
     const Ro=G.gf?3.75:s.raio+G.wall;rr(0,0,G.W,G.D,Ro);g.fillStyle=css("--part2");g.globalAlpha=.85;g.fill();g.globalAlpha=1;
@@ -1036,10 +1088,10 @@ function gridEditor(f,p,s){
       if(L.n.f&&L.h*G.sc>34&&L.w*G.sc>34)g.fillText(`+${nf(L.n.f,0)} mm`,X(L.x+L.w/2),Y(L.y+L.h/2)+8)}
     for(const d of G.divs){if(d===hover||(drag&&drag.d===d)){g.fillStyle=accF;g.fillRect(X(d.x)-(d.ax?2:0),Y(d.y+d.h)-(d.ax?0:2),Math.max(4,d.w*G.sc),Math.max(4,d.h*G.sc))}}
     g.textAlign="left";g.font=`500 11px "IBM Plex Mono", monospace`;g.fillStyle=mut;
-    renderCell()};
+    if(keep!==true)renderCell()};
   const renderCell=()=>{if(!gridSel){cellBox.innerHTML="";return}const v=gridSel.f||0;
     cellBox.innerHTML=`<div class="field"><label for="ge-f">Altura do fundo deste compartimento<output data-noi18n>${nf(v,0)} mm</output></label><input id="ge-f" type="range" min="0" max="${Math.max(1,Math.floor(trayDims(s).H-3))}" step="1" value="${v}"></div>`;
-    const r=cellBox.querySelector("input"),o=cellBox.querySelector("output");r.onpointerdown=()=>push();r.oninput=()=>{gridSel.f=+r.value;o.textContent=nf(+r.value,0)+" mm";draw();queue()}};
+    const r=cellBox.querySelector("input"),o=cellBox.querySelector("output");r.onpointerdown=()=>push();r.oninput=()=>{gridSel.f=+r.value;o.textContent=nf(+r.value,0)+" mm";draw(true);queue()};r.onchange=()=>runFull()};
   const at=e=>{const b=cv.getBoundingClientRect(),px=e.clientX-b.left,py=e.clientY-b.top;return [(px-geo.ox)/geo.sc,geo.D-(py-geo.pad)/geo.sc,px,py]};
   const hitDiv=(x,y)=>{const tol=Math.max(5/geo.sc,s.part/2+.5);for(const d of geo.divs){if(d.ax){if(Math.abs(x-d.pos)<tol&&y>=d.y-.5&&y<=d.y+d.h+.5)return d}else if(Math.abs(y-d.pos)<tol&&x>=d.x-.5&&x<=d.x+d.w+.5)return d}return null};
   const hitLeaf=(x,y)=>geo.leaves.find(L=>x>=L.x&&x<=L.x+L.w&&y>=L.y&&y<=L.y+L.h);
@@ -1115,6 +1167,27 @@ const KEY_PARAMS=()=>[SEG("tamTecla","Tamanho","1",[["1","1u"],["1.25","1,25u"],
 const memo=fn=>{let v;return()=>v||(v=fn())};
 const samplePaw=memo(()=>{const c=document.createElement("canvas");c.width=c.height=400;const g=c.getContext("2d");g.fillStyle="#fff";g.fillRect(0,0,400,400);g.fillStyle="#000";
   g.beginPath();g.ellipse(200,265,92,78,0,0,7);g.fill();[[95,165,-.4],[160,105,-.15],[240,105,.15],[305,165,.4]].forEach(([x,y,r])=>{g.beginPath();g.ellipse(x,y,36,48,r,0,7);g.fill()});return c});
+const sampleLogo=memo(()=>{const c=document.createElement("canvas");c.width=c.height=400;const g=c.getContext("2d");g.fillStyle="#fff";g.fillRect(0,0,400,400);g.fillStyle="#000";
+  g.beginPath();for(let k=0;k<10;k++){const a=-Math.PI/2+k*Math.PI/5,r=k%2?80:190;g.lineTo(200+r*Math.cos(a),215+r*Math.sin(a))}g.closePath();g.fill();return c});
+/* frente e verso: o verso entra rebaixado (uma cor) ou embutido rente (duas cores), espelhado para ler por trás */
+const mirW=(W,d)=>g=>{g.save();g.translate(W,0);g.scale(-1,1);d(g);g.restore()};
+const within=(a,b)=>g=>{const c=g.canvas,off=document.createElement("canvas");off.width=c.width;off.height=c.height;const o=off.getContext("2d");o.setTransform(g.getTransform());o.fillStyle="#000";o.strokeStyle="#000";b(o);
+  a(g);g.save();g.setTransform(1,0,0,1,0,0);g.globalCompositeOperation="destination-in";g.drawImage(off,0,0);g.restore()};
+const VERSO=(show,extra)=>[G("Verso"),SEG("verso","Verso","liso",[["liso","Liso"],["igual","Igual à frente"],["texto","Outro texto"],["logo","Logo"]].filter(o=>!extra||!extra.no||!extra.no.includes(o[0])),show?{show}:undefined),
+  T("versoTxt","Texto do verso","Se achar, ligue: (19) 99999-0000",{max:48,show:p=>(!show||show(p))&&p.verso==="texto"}),FSEL("versoFonte","Fonte do verso","display",{show:p=>(!show||show(p))&&p.verso==="texto"}),
+  {k:"versoImg",t:"file",label:"Logo do verso",accept:"image/*",as:"image",nodraw:true,sample:sampleLogo,sampleName:"exemplo-estrela.png",show:p=>(!show||show(p))&&p.verso==="logo"},
+  R("versoP","Profundidade do verso",.6,.4,1.2,.2,"mm",{show:p=>(!show||show(p))&&p.verso!=="liso"})].map(x=>{if(x.t==="seg"&&show)x.show=show;return x});
+/* desenho do verso dentro de uma caixa (x0,y0,w,h) */
+async function versoDraw(p,front,bx,by,bw,bh){
+  if(p.verso==="igual")return front;
+  if(p.verso==="texto"){const t=(p.versoTxt||"").trim();if(!t)return null;const words=t.split(/\s+/),lines=[];let cur="";
+    const m1=await measure(p.versoFonte,10,t);const oneLine=m1.w/m1.h<bw/bh*1.6||words.length<3;
+    if(oneLine)lines.push(t);else{const half=Math.ceil(t.length/2);let acc=0,k=0;for(;k<words.length;k++){acc+=words[k].length+1;if(acc>=half)break}lines.push(words.slice(0,k+1).join(" "),words.slice(k+1).join(" "));if(!lines[1])lines.pop()}
+    const ms=[];for(const l of lines)ms.push(await fitText(p.versoFonte,bh/lines.length*.7,l,bw*.9));
+    return g=>ms.forEach((m,i)=>textAt(m,lines[i],bx+bw/2,by+bh*(i+.5)/lines.length)(g))}
+  if(p.verso==="logo"&&p.versoImg&&p.versoImg.data){const [iw,ih]=imgSize(p.versoImg.data),k=Math.min(bw*.85/iw,bh*.85/ih),dw=iw*k,dh=ih*k,mc=imageMask(p.versoImg.data,Math.max(8,Math.round(dw*8)),Math.max(8,Math.round(dh*8)),50,false);
+    if(!mc)return null;return g=>g.drawImage(mc,bx+(bw-dw)/2,by+(bh-dh)/2,dw,dh)}
+  return null}
 const samplePhoto=memo(()=>{const c=document.createElement("canvas");c.width=480;c.height=320;const g=c.getContext("2d");
   const sky=g.createLinearGradient(0,0,0,320);sky.addColorStop(0,"#1d2a3a");sky.addColorStop(.6,"#c97b4a");sky.addColorStop(1,"#f2d3a8");g.fillStyle=sky;g.fillRect(0,0,480,320);
   g.fillStyle="#fff3d6";g.beginPath();g.arc(330,170,46,0,7);g.fill();
@@ -1151,7 +1224,7 @@ function repairMesh(pos,fill){
   const [open1,nm1]=count(),out=new Float32Array(F.length*3);for(let i=0;i<F.length;i++){out[i*3]=V[F[i]*3];out[i*3+1]=V[F[i]*3+1];out[i*3+2]=V[F[i]*3+2]}
   return {pos:out,deg,dup,flipped,holes,open0,open1,nm:nm1,tris:F.length/3};
 }
-const sampleBroken=memo(()=>{const a=lathe(defaults(byId.vaso),false),o=[];for(let i=0;i<a.length;i+=9){const t=i/9;if(t>=3000&&t<3060)continue;if(t>=9000&&t<9400){o.push(a[i],a[i+1],a[i+2],a[i+6],a[i+7],a[i+8],a[i+3],a[i+4],a[i+5])}else for(let k=0;k<9;k++)o.push(a[i+k])}return stl(new Float32Array(o),"exemplo").buffer});
+const sampleBroken=memo(()=>{const a=lathe(defaults(byId["vaso-perfil"]),false),o=[];for(let i=0;i<a.length;i+=9){const t=i/9;if(t>=3000&&t<3060)continue;if(t>=9000&&t<9400){o.push(a[i],a[i+1],a[i+2],a[i+6],a[i+7],a[i+8],a[i+3],a[i+4],a[i+5])}else for(let k=0;k<9;k++)o.push(a[i+k])}return stl(new Float32Array(o),"exemplo").buffer});
 const sampleTerrain=memo(()=>{const c=document.createElement("canvas");c.width=256;c.height=192;const g=c.getContext("2d");g.fillStyle="#000";g.fillRect(0,0,256,192);g.globalCompositeOperation="lighter";
   for(const [x,y,r,a] of [[70,70,90,.8],[170,110,110,.9],[120,40,50,.45],[215,45,60,.55],[40,160,70,.5],[150,170,40,.3],[105,115,35,.35]]){const gr=g.createRadialGradient(x,y,0,x,y,r);gr.addColorStop(0,`rgba(255,255,255,${a})`);gr.addColorStop(1,"rgba(255,255,255,0)");g.fillStyle=gr;g.fillRect(0,0,256,192)}return c});
 
@@ -1167,6 +1240,7 @@ const R=(k,label,v,min,max,step,u,extra)=>Object.assign({k,t:"range",label,v,min
 const T=(k,label,v,extra)=>Object.assign({k,t:"text",label,v},extra||{});
 const S=(k,label,v,opts,extra)=>Object.assign({k,t:"select",label,v,opts},extra||{});
 const SEG=(k,label,v,opts)=>({k,t:"seg",label,v,opts});
+const LIST=(k,label,v,opts)=>({k,t:"seg",label,v,opts,list:true});
 const C=(k,label,v,extra)=>Object.assign({k,t:"check",label,v},extra||{});
 const G=label=>({t:"group",label});
 const DUAS=C("duas","Duas cores (arquivos separados)",true);
@@ -1176,27 +1250,30 @@ const ITEMS=[
  desc:"Inicial grande com o nome atravessando em outra cor. O nome encaixa num rebaixo com o formato dele dentro da letra.",
  tips:{"Camada":"0,2 mm","Preenchimento":"15%","Suporte":"Não precisa","Montagem":"Encaixe o nome na letra"},
  params:[G("Letra"),T("letra","Inicial","G",{max:1}),FSEL("fl","Fonte da letra","block"),R("alt","Altura da letra",90,40,160,5,"mm"),R("esp","Espessura",8,3,20,1,"mm"),
-  G("Nome"),T("nome","Nome","Gustavo",{max:20}),FSEL("fn","Fonte do nome","script"),R("tn","Tamanho do nome",34,15,60,1,"%"),R("rel","Relevo do nome",2,0,6,.5,"mm"),R("cont","Contorno do nome",1.6,.6,4,.2,"mm"),DUAS],
+  G("Nome"),T("nome","Nome","Gustavo",{max:20}),FSEL("fn","Fonte do nome","script"),R("tn","Tamanho do nome",34,15,60,1,"%"),R("rel","Relevo do nome",2,0,6,.5,"mm"),R("cont","Contorno do nome",1.6,.6,4,.2,"mm"),C("contL","Contorno na cor da letra (nome mais legível)",true),R("relC","Relevo do contorno",1,0,6,.5,"mm",{show:p=>p.contL}),DUAS],
  async build(p){
   const L=(p.letra||"A").trim().charAt(0)||"A";let mL=await measure(p.fl,100,L);mL=await measure(p.fl,100*p.alt/mL.h,L);
   const nm=(p.nome||" ").slice(0,20);const mN=await fitText(p.fn,p.alt*p.tn/100,nm,Math.max(mL.w*1.45,p.alt*.9));
   const pad=3,W=Math.max(mL.w,mN.w+p.cont*2)+pad*2,H=mL.h+pad*2;
-  const letter=textAt(mL,L,W/2,H/2),name=strokeTextAt(mN,nm,W/2,H/2,p.cont);
-  const res=autoRes(W,H,5);
+  const letter=textAt(mL,L,W/2,H/2),name=strokeTextAt(mN,nm,W/2,H/2,p.cont),glyph=textAt(mN,nm,W/2,H/2);
+  const res=autoRes(W,H,6);
+  if(p.contL){const ho=p.esp+p.relC,hn=ho+p.rel;
+    if(!p.duas)return [{name:"letra",pos:heightfield(W,H,res,[{h:p.esp,draw:letter},{h:ho,draw:name},{h:hn,draw:glyph}]),c:0}];
+    return [{name:"letra",pos:heightfield(W,H,res,[{h:p.esp,draw:letter},{h:ho,draw:name},{cut:true,draw:glyph}]),c:0},{name:"nome",pos:heightfield(W,H,res,[{h:hn,draw:glyph}]),c:1}]}
   if(!p.duas)return [{name:"letra",pos:heightfield(W,H,res,[{h:p.esp,draw:letter},{h:p.esp+p.rel,draw:name}]),c:0}];
   return [{name:"letra",pos:heightfield(W,H,res,[{h:p.esp,draw:g=>{letter(g);cut(g,name)}}]),c:0},{name:"nome",pos:heightfield(W,H,res,[{h:p.esp+p.rel,draw:name}]),c:1}];
  }},
 {id:"placa-nome",name:"Nome 3D de mesa",kind:"modelo",cats:["nomes","mesa","personalizados"],rank:5,added:4,tags:["duas cores"],
  desc:"Nome em pé sobre uma base retangular. Fica bem em mesa de escritório, quarto de criança e decoração de festa.",
  tips:{"Camada":"0,16 mm","Preenchimento":"20%","Suporte":"Não precisa","Orientação":"Imprime em pé, como na tela"},
- params:[G("Texto"),T("text","Texto","Ana Clara",{max:22}),FSEL("font","Fonte","script"),R("size","Altura do texto",30,12,70,1,"mm"),R("esp","Espessura do texto",5,2,15,.5,"mm"),
+ params:[G("Texto"),T("text","Texto","Ana Clara",{max:22}),FSEL("font","Fonte","script"),R("size","Altura do texto",30,12,70,1,"mm"),R("esp","Espessura do texto",5,2,15,.5,"mm"),R("ped","Altura da faixa entre o nome e a base",2,0,25,.5,"mm"),R("pedM","Sobra da faixa nas pontas",0,0,15,.5,"mm"),
   G("Base"),R("bh","Altura da base",5,2,15,.5,"mm"),R("bd","Profundidade da base",22,10,50,1,"mm"),R("bm","Sobra nas pontas",4,0,15,1,"mm"),DUAS],
  async build(p){
   const t=(p.text||" ").slice(0,22),m=await measure(p.font,p.size,t);
-  const Wc=m.w+1,Hc=m.h,tx=.5+m.l,by=m.a,res=autoRes(Wc,Hc,6);
-  const tp=heightfield(Wc,Hc,res,[{h:p.esp,draw:g=>{g.font=m.f;g.lineJoin="round";g.lineWidth=.8;g.strokeText(t,tx,by);g.fillText(t,tx,by);g.fillRect(.5,by-1.6,m.w,m.d+1.6)}}]);
-  rotX(tp);shift(tp,0,p.esp/2,p.bh);
-  const B=[];boxTris(B,-p.bm,-p.bd/2,0,Wc+p.bm,p.bd/2,p.bh);const base=new Float32Array(B);
+  const pm=p.pedM,Wc=m.w+1+2*pm,Hc=m.h+p.ped,tx=.5+pm+m.l,by=m.a,res=autoRes(Wc,Hc,6);
+  const tp=heightfield(Wc,Hc,res,[{h:p.esp,draw:g=>{g.font=m.f;g.lineJoin="round";g.lineWidth=.8;g.strokeText(t,tx,by);g.fillText(t,tx,by);g.fillRect(.5,by-1.6,m.w+2*pm,Hc-by+1.6)}}]);
+  rotX(tp);shift(tp,-pm,p.esp/2,p.bh);
+  const B=[];boxTris(B,-pm-p.bm,-p.bd/2,0,Wc-pm+p.bm,p.bd/2,p.bh);const base=new Float32Array(B);
   return p.duas?[{name:"base",pos:base,c:1},{name:"nome",pos:tp,c:0}]:[{name:"placa",pos:concat(base,tp),c:0}];
  }},
 {id:"enfeite-natal",name:"Enfeite de Natal com nome",kind:"modelo",cats:["natal","festas","personalizados"],rank:3,added:10,tags:["novo","natal"],
@@ -1278,20 +1355,22 @@ const ITEMS=[
  desc:"Texto cursivo ligado com contorno e hastes para espetar no bolo. Uma ou duas linhas.",
  tips:{"Camada":"0,2 mm","Material":"PLA","Higiene":"Embrulhe as hastes em filme","Preenchimento":"100%"},
  params:[G("Texto"),T("l1","Linha 1","Feliz",{max:20}),T("l2","Linha 2","Aniversário",{max:20}),FSEL("font","Fonte","script"),
-  G("Tamanho"),R("larg","Largura",140,60,220,5,"mm"),R("esp","Espessura",2.5,1.6,5,.2,"mm"),R("cont","Contorno",1.6,.6,4,.2,"mm"),R("haste","Comprimento das hastes",55,30,90,5,"mm")],
+  G("Tamanho"),R("larg","Largura",140,60,220,5,"mm"),R("esp","Espessura",2.5,1.6,5,.2,"mm"),R("cont","Contorno",1.6,.6,4,.2,"mm"),R("haste","Comprimento das hastes",55,30,90,5,"mm"),C("cores","Escrito e haste em cores separadas",true)],
  async build(p){
   const l1=(p.l1||"").trim(),l2=(p.l2||"").trim();const lines=[l1,l2].filter(Boolean);if(!lines.length)lines.push("Parabéns");
   const ms=[];for(const [i,l] of lines.entries())ms.push(await fitText(p.font,i===lines.length-1?60:42,l,p.larg-p.cont*2));
   const pad=p.cont+1,gap=-ms[0].h*.12;let H=pad;const ys=[];for(const m of ms){ys.push(H+m.h/2);H+=m.h+gap}H+=-gap+3;const barY=H-3,W=p.larg+pad*2;const Ht=H+p.haste+1;
-  const draw=g=>{ms.forEach((m,i)=>strokeTextAt(m,lines[i],W/2,ys[i],p.cont)(g));
-    if(ms.length>1){const mid=(ys[0]+ys[1])/2,mw=Math.min(ms[0].w,ms[1].w);for(const fx of [-.25,.25])g.fillRect(W/2+fx*mw-1.5,mid-ms[0].h*.25,3,ms[0].h*.5)}
-    const last=ms[ms.length-1];g.fillRect(W/2-last.w/2+3,barY,last.w-6,3);for(const fx of [.3,.7]){g.fillRect(W/2+(fx-.5)*last.w-1.6,barY,3.2,p.haste);}};
-  return [{name:"topo",pos:heightfield(W,Ht,autoRes(W,Ht,5),[{h:p.esp,draw}]),c:0}];
+  const txt=g=>{ms.forEach((m,i)=>strokeTextAt(m,lines[i],W/2,ys[i],p.cont)(g));
+    if(ms.length>1){const mid=(ys[0]+ys[1])/2,mw=Math.min(ms[0].w,ms[1].w);for(const fx of [-.25,.25])g.fillRect(W/2+fx*mw-1.5,mid-ms[0].h*.25,3,ms[0].h*.5)}};
+  const last=ms[ms.length-1],stem=g=>{g.fillRect(W/2-last.w/2+3,barY,last.w-6,3);for(const fx of [.3,.7]){g.fillRect(W/2+(fx-.5)*last.w-1.6,barY,3.2,p.haste);}};
+  const res=autoRes(W,Ht,5);
+  if(!p.cores)return [{name:"topo",pos:heightfield(W,Ht,res,[{h:p.esp,draw:g=>{txt(g);stem(g)}}]),c:0}];
+  return [{name:"escrito",pos:heightfield(W,Ht,res,[{h:p.esp,draw:txt},{cut:true,draw:stem}]),c:0},{name:"haste",pos:heightfield(W,Ht,res,[{h:p.esp,draw:stem}]),c:1}].filter(x=>x.pos.length);
  }},
 {id:"organizador",name:"Bandeja organizadora",kind:"modelo",cats:["organizacao","mesa"],rank:1.5,added:40,tags:["novo"],
  desc:"Medidas da gaveta e divisórias do seu jeito: divida, junte e arraste. Fundo diferente por compartimento, empilhável, furos nas paredes, porta-etiqueta, puxador, alça, versão de parede e Gridfinity.",
  tips:{"Camada":"0,2 mm","Paredes":"2","Preenchimento":"15%","Suporte":"Não precisa"},
- params:[G("Tipo"),SEG("modo","Tipo","particao",[["particao","Bandeja"],["parede","De parede"],["skadis","Skådis"],["transporte","Com alça"],["gridfinity","Gridfinity"]]),
+ params:[G("Tipo"),LIST("modo","Escolha seu tipo","particao",[["particao","Bandeja","Para gaveta e mesa, com divisórias livres"],["parede","De parede","Com furos de parafuso no fundo"],["skadis","Skådis","Encaixa no painel perfurado da IKEA"],["transporte","Com alça","Alça central para carregar"],["gridfinity","Gridfinity","Caixa na grade de 42 mm"]]),
   G("Medidas"),R("w","Largura",160,30,320,1,"mm",{show:p=>p.modo!=="gridfinity"}),R("d","Profundidade",110,30,320,1,"mm",{show:p=>p.modo!=="gridfinity"}),R("h","Altura",40,8,160,1,"mm",{show:p=>p.modo!=="gridfinity"}),
   R("gx","Unidades na largura",3,1,7,1,"",{show:p=>p.modo==="gridfinity"}),R("gy","Unidades na profundidade",2,1,7,1,"",{show:p=>p.modo==="gridfinity"}),R("gz","Altura em unidades de 7 mm",4,2,15,1,"",{show:p=>p.modo==="gridfinity"}),
   G("Divisórias"),{k:"grid",t:"grid",label:"Monte as divisórias",v:SPL("x",[1,1.2],[LF(),SPL("y",[1,1,1],[LF(),LF(),LF()])])},
@@ -1299,7 +1378,7 @@ const ITEMS=[
   R("raio","Arredondar cantos",3,0,20,.5,"mm"),R("rfundo","Fundo arredondado",0,0,15,.5,"mm"),
   G("Extras"),C("tampa","Gerar tampa de encaixe",false,{show:p=>p.modo==="particao"}),C("labio","Borda de empilhamento",true,{show:p=>p.modo==="gridfinity"}),C("empilha","Empilhável",false,{show:p=>p.modo!=="gridfinity"}),C("ima","Furos para ímã na base",false,{show:p=>p.modo==="gridfinity"}),
   SEG("furos","Furos nas paredes","nenhum",[["nenhum","Nenhum"],["hex","Hexágonos"],["circ","Círculos"]]),R("furoT","Tamanho do furo",8,3,20,.5,"mm",{show:p=>p.furos!=="nenhum"}),SEG("furoE","Espaçamento","normal",[["denso","Denso"],["normal","Normal"],["amplo","Amplo"]],{show:p=>p.furos!=="nenhum"}),
-  C("puxador","Puxador na frente",false,{show:p=>p.modo!=="gridfinity"}),R("puxL","Largura do puxador",24,10,70,1,"mm",{show:p=>p.puxador&&p.modo!=="gridfinity"}),R("puxH","Profundidade do puxador",12,4,60,1,"mm",{show:p=>p.puxador&&p.modo!=="gridfinity"}),
+  S("puxador","Puxador na frente","nenhum",[["nenhum","Sem puxador"],["recorte","Recorte na borda"],["furo","Furo para o dedo"],["aba","Aba para fora"],["alca","Alça em laço"]],{show:p=>p.modo!=="gridfinity"}),R("puxL","Largura do puxador",24,10,70,1,"mm",{show:p=>p.puxador!=="nenhum"&&p.modo!=="gridfinity"}),R("puxH","Tamanho do puxador",12,4,40,1,"mm",{show:p=>p.puxador!=="nenhum"&&p.modo!=="gridfinity"}),
   C("etiqueta","Porta-etiqueta na frente",false,{show:p=>p.modo!=="gridfinity"}),T("etTexto","Texto da etiqueta","Parafusos",{max:24,show:p=>p.etiqueta&&p.modo!=="gridfinity"}),FSEL("etFonte","Fonte da etiqueta","display",{show:p=>p.etiqueta&&p.modo!=="gridfinity"}),
   R("etL","Largura da etiqueta",40,20,120,1,"mm",{show:p=>p.etiqueta&&p.modo!=="gridfinity"}),R("etH","Altura da etiqueta",12,8,30,1,"mm",{show:p=>p.etiqueta&&p.modo!=="gridfinity"}),SEG("etPos","Posição da etiqueta","centro",[["esq","Esquerda"],["centro","Centro"],["dir","Direita"]],{show:p=>p.etiqueta&&p.modo!=="gridfinity"})],
  build:buildTray},
@@ -1315,13 +1394,6 @@ const ITEMS=[
     return [[lo,h]]};
   return [{name:"base-gridfinity-"+p.gx+"x"+p.gy,pos:columns(W,D,autoRes(W,D,5,380000),0,0,fn),c:0}];
  }},
-{id:"vaso",name:"Vaso torcido",kind:"modelo",cats:["vasos","personalizados"],rank:12,added:2,tags:[],
- desc:"Vaso com ondas e torção ao longo da altura. Funciona no modo vaso (espiral) do fatiador.",
- tips:{"Modo":"Vaso / espiral","Bico":"0,4 a 0,6 mm","Camada":"0,2 a 0,3 mm","Fundo":"3 camadas sólidas"},
- params:[G("Forma"),R("h","Altura",120,40,250,5,"mm"),R("rb","Raio da base",32,15,80,1,"mm"),R("rt","Raio da boca",42,15,90,1,"mm"),R("bulge","Barriga",8,-15,25,1,"mm"),
-  G("Textura"),R("waves","Ondas",9,0,24,1),R("amp","Profundidade da onda",3,0,10,.5,"mm"),R("twist","Torção",90,-360,360,15,"°"),
-  G("Parede"),R("wall","Parede",1.6,.8,5,.2,"mm"),R("bottom","Fundo",2,.8,6,.2,"mm")],
- async build(p){return [{name:"vaso",pos:lathe(p,false),c:0}]}},
 {id:"cupula",name:"Cúpula de luminária",kind:"modelo",cats:["vasos","personalizados"],rank:13,added:6,tags:["beta"],
  desc:"Cúpula aberta nas duas pontas, com ondas e torção. Use com soquete E27 e lâmpada LED fria.",
  tips:{"Modo":"Vaso / espiral","Filamento":"Branco ou translúcido","Lâmpada":"LED até 9 W","Camada":"0,2 mm"},
@@ -1341,41 +1413,60 @@ const ITEMS=[
   if(S2[0]>S1[0]+2)P.push(rectAlong(S2,S1,t));
   return [{name:"suporte",pos:rotX(extrudeUnion(P,p.larg)),c:0}];
  }},
-{id:"gancho",name:"Gancho de parede",kind:"modelo",cats:["parede","organizacao"],rank:15,added:3,tags:[],
- desc:"Gancho em J para chave, bolsa e fone. Ajuste a altura, a profundidade e a ponta.",
- tips:{"Orientação":"Deitado de lado","Paredes":"4","Fixação":"Fita dupla-face VHB","Carga":"Até ~2 kg em PETG"},
- params:[G("Medidas"),R("alt","Altura da placa",50,25,120,1,"mm"),R("prof","Profundidade",30,15,80,1,"mm"),R("ponta","Altura da ponta",12,5,40,1,"mm"),R("larg","Largura",20,10,60,1,"mm"),R("esp","Espessura",5,3,10,.5,"mm")],
- async build(p){const t=p.esp,P=[];P.push(rect(0,0,t,p.alt));P.push(rect(0,0,p.prof,t));P.push(rect(p.prof-t,0,p.prof,p.ponta));return [{name:"gancho",pos:rotX(extrudeUnion(P,p.larg)),c:0}]}},
+{id:"gancho",name:"Gancho de parede",kind:"modelo",cats:["parede","organizacao"],rank:15,added:3,tags:["novo"],
+ desc:"Gancho para chave, bolsa, fone e casaco em cinco estilos. Fixe com parafuso escareado ou fita dupla-face.",
+ tips:{"Orientação":"Deitado de lado, como na tela","Paredes":"4","Material":"PETG aguenta mais peso","Carga":"Até ~2 kg com parafuso"},
+ params:[G("Estilo"),LIST("estilo","Escolha o estilo","j",[["j","Gancho J","Clássico para chaves e bolsas"],["curvo","Curvo","Ponta arredondada, segura sem escorregar"],["duplo","Duplo","Dois ganchos, um acima do outro"],["pino","Pino com bola","Para boné, fone e casaco"],["bolsa","Bolsa e mochila","Fundo largo e reforçado"]]),
+  G("Medidas"),R("alt","Altura da placa",55,25,140,1,"mm"),R("prof","Profundidade",30,12,80,1,"mm"),R("ponta","Altura da ponta",12,4,40,1,"mm",{show:p=>p.estilo!=="pino"}),R("larg","Largura",20,10,60,1,"mm"),R("esp","Espessura",5,3,10,.5,"mm"),
+  G("Fixação"),SEG("fix","Fixação","parafuso",[["parafuso","Parafuso"],["fita","Fita dupla-face"]]),R("furoD","Diâmetro do parafuso",4,2.5,6,.5,"mm",{show:p=>p.fix==="parafuso"}),C("escareado","Furo escareado (cabeça embutida)",true,{show:p=>p.fix==="parafuso"}),
+  R("rebaixo","Rebaixo para a fita",.6,0,1.5,.1,"mm",{show:p=>p.fix==="fita"})],
+ async build(p){
+  const t=p.esp,A=p.alt,st=p.estilo,deep=st==="bolsa",P=Math.max(p.prof,t*2.4)*(deep?1.15:1),tp=Math.min(p.ponta,A-2),tt=deep?t*1.35:t;
+  const ball=st==="pino"?t*1.1:0,Wd=P+ball+2,res=autoRes(Wd,A,7,260000);
+  const draw=g=>{g.lineJoin="round";g.lineCap="round";g.lineWidth=t;const Y=y=>A-y;
+    g.fillRect(0,0,t,A);g.beginPath();
+    if(st==="j"||st==="bolsa"){g.lineWidth=tt;g.moveTo(t/2,Y(tt/2));g.lineTo(P-tt/2,Y(tt/2));g.lineTo(P-tt/2,Y(tp));g.stroke()}
+    else if(st==="curvo"){const r=(P-t)/2;g.moveTo(t/2,Y(r+t/2));g.arc(t/2+r,Y(r+t/2),r,Math.PI,0,true);g.lineTo(P-t/2,Y(Math.max(r+t/2,tp)));g.stroke()}
+    else if(st==="duplo"){const y2=A*.55;for(const [y0,pp,hh] of [[t/2,P,tp],[y2,P*.7,Math.min(tp*.8,A-y2-t)]]){g.moveTo(t/2,Y(y0));g.lineTo(pp-t/2,Y(y0));g.lineTo(pp-t/2,Y(y0+Math.max(t,hh)));}g.stroke()}
+    else if(st==="pino"){const a=.26,ex=t/2+(P-t/2)*Math.cos(a),ey=t+(P-t/2)*Math.sin(a);g.moveTo(t/2,Y(t));g.lineTo(ex,Y(ey));g.stroke();circle(g,ex,Y(ey),ball)}};
+  const M=maskOf(Wd,A,res,draw),at=(x,y)=>{const ix=Math.floor(x*res),r=M.H-1-Math.floor(y*res);return ix>=0&&r>=0&&ix<M.W&&r<M.H&&M.m[r*M.W+ix]};
+  const L=p.larg,zc=L/2,holes=[];
+  if(p.fix==="parafuso"){const lowY=st==="pino"?t*2.5:st==="duplo"?A*.55+t*1.6:tt+5;const top=A-Math.max(6,p.furoD*1.4);if(top>lowY+2&&A-lowY>p.furoD*2.6)holes.push(top);if(A>=48&&top-lowY>p.furoD*4)holes.push(lowY+(top-lowY)*.25)}
+  const rd=p.furoD/2+.2,cs=Math.min(t-1,rd*1.1);
+  const fn=(x,y)=>{if(!at(x,y))return null;let sg=[[0,L]];
+    if(x<t){for(const yc of holes){const r=p.escareado&&x>t-cs?rd+(x-(t-cs)):rd,dy=y-yc;if(Math.abs(dy)<r){const hz=Math.sqrt(r*r-dy*dy);sg=ivSub(sg,zc-hz,zc+hz)}}
+      if(p.fix==="fita"&&p.rebaixo>0&&x<p.rebaixo&&y>tt+1.5&&y<A-1.5)sg=ivSub(sg,1.5,L-1.5)}
+    return sg};
+  return [{name:"gancho",pos:columns(Wd,A,res,0,0,fn),c:0}];
+ }},
 {id:"chaveiro",name:"Chaveiro com nome",kind:"modelo",cats:["chaveiros","personalizados"],rank:1,added:3,tags:["lote"],
- desc:"Nome em relevo com ícone opcional (emoji), base em contorno, retângulo ou cápsula e argola. Gera vários nomes de uma vez.",
+ desc:"Nome em relevo com logo opcional, base em contorno, retângulo ou cápsula, argola e verso personalizado. Gera vários nomes de uma vez.",
  tips:{"Camada":"0,2 mm","Preenchimento":"15%","Suporte":"Não precisa","Troca de cor":"Na camada do relevo"},
- params:[G("Texto"),T("text","Texto","Gustavo",{max:24}),T("icon","Ícone (emoji, opcional)","⚽",{max:4}),FSEL("font","Fonte","display"),R("size","Altura da letra",14,8,30,1,"mm"),
-  G("Base"),SEG("estilo","Formato da base","contorno",[["contorno","Contorno"],["retangulo","Retângulo"],["capsula","Cápsula"]]),R("border","Borda",2.5,1,6,.5,"mm"),R("base","Espessura da base",2.4,1.2,5,.2,"mm"),R("relief","Relevo do texto",1.2,.4,4,.2,"mm"),C("ring","Argola para corrente",true),DUAS,G("Lote"),LOTE("text")],
+ params:[G("Texto"),T("text","Texto","Gustavo",{max:24}),FSEL("font","Fonte","display"),R("size","Altura da letra",14,8,30,1,"mm"),
+  G("Logo"),C("logoOn","Logo antes do nome",false),{k:"logo",t:"file",label:"Arquivo da logo (PNG ou JPG)",accept:"image/*",as:"image",nodraw:true,sample:sampleLogo,sampleName:"exemplo-estrela.png",show:p=>p.logoOn},
+  R("logoS","Tamanho da logo",120,60,200,5,"%",{show:p=>p.logoOn}),R("logoThr","Limiar da logo",50,5,95,1,"%",{show:p=>p.logoOn}),
+  G("Base"),SEG("estilo","Formato da base","contorno",[["contorno","Contorno"],["retangulo","Retângulo"],["capsula","Cápsula"]]),R("border","Borda",2.5,1,6,.5,"mm"),R("base","Espessura da base",2.4,1.2,5,.2,"mm"),R("relief","Relevo do texto",1.2,.4,4,.2,"mm"),C("ring","Argola para corrente",true),
+  ...VERSO(),DUAS,G("Lote"),LOTE("text")],
  async build(p){
   const t=(p.text||" ").slice(0,24),m=await measure(p.font,p.size,t);
-  const ic=(p.icon||"").trim(),mi=ic?await measureEmoji(p.size*1.1,ic):null,gap=ic?p.size*.25:0;
-  const b=p.border,pad=b+.6,ringR=p.ring?Math.max(4.4,b+2.6):0,inkH=Math.max(m.h,mi?mi.h:0);
+  let lg=null;if(p.logoOn&&p.logo&&p.logo.data){const [iw,ih]=imgSize(p.logo.data),lh=p.size*p.logoS/100,k=lh/ih,lw=Math.min(iw*k,p.size*3),kk=Math.min(k,lw/iw),dw=iw*kk,dh=ih*kk;
+    const mc=imageMask(p.logo.data,Math.max(8,Math.round(dw*10)),Math.max(8,Math.round(dh*10)),p.logoThr,false);if(!mc)throw new Error("Nenhum traço na logo. Ajuste o limiar.");lg={mc,w:dw,h:dh}}
+  const gap=lg?p.size*.3:0,b=p.border,pad=b+.6,ringR=p.ring?Math.max(4.4,b+2.6):0,inkH=Math.max(m.h,lg?lg.h:0);
   const startX=pad+(p.ring?ringR*2-1.5:0)+(p.estilo!=="contorno"&&p.ring?1.5:0);
-  const iconX=startX+(mi?mi.l:0),textX=startX+(mi?mi.w+gap:0),tx=textX+m.l;
-  const W=textX+m.w+pad,H=inkH+pad*2,cy=H/2,cx=pad+ringR,by=cy+(m.a-m.d)/2,iy=mi?cy+(mi.a-mi.d)/2:0;
-  const icon=g=>{if(mi){g.font=mi.f;g.fillText(ic,iconX,iy)}};
-  const txt=g=>{g.font=m.f;g.fillText(t,tx,by);icon(g)};
+  const textX=startX+(lg?lg.w+gap:0),tx=textX+m.l;
+  const W=textX+m.w+pad,H=inkH+pad*2,cy=H/2,cx=pad+ringR,by=cy+(m.a-m.d)/2;
+  const logoD=g=>{if(lg)g.drawImage(lg.mc,startX,cy-lg.h/2,lg.w,lg.h)};
+  const txt=g=>{g.font=m.f;g.fillText(t,tx,by);logoD(g)};
   const outline=g=>{
-    if(p.estilo==="contorno"){g.font=m.f;g.lineJoin="round";g.lineWidth=b*2;g.strokeText(t,tx,by);if(mi)dilate(g,icon,b);txt(g)}
+    if(p.estilo==="contorno"){g.font=m.f;g.lineJoin="round";g.lineWidth=b*2;g.strokeText(t,tx,by);if(lg){dilate(g,logoD,b);g.fillRect(startX+lg.w*.5,cy-Math.min(lg.h,m.h)*.3,textX-startX-lg.w*.5+m.w*.1,Math.min(lg.h,m.h)*.6)}txt(g)}
     else{const x0=startX-b,y0=pad-b,w=W-pad+b-x0,h=H-2*y0;rrect(g,x0,y0,w,h,p.estilo==="capsula"?h/2:2.5)}
     if(p.ring){circle(g,cx,cy,ringR);const bh=Math.min(ringR*1.5,inkH);g.fillRect(cx,cy-bh/2,startX-cx+b+1,bh);cut(g,gg=>circle(gg,cx,cy,ringR-2.4))}};
-  return tone(p.duas,W,H,autoRes(W,H,6),[{h:p.base,draw:outline}],p.base,[{h:p.relief,draw:txt}],["base","texto"]);
- }},
-{id:"chaveiro-inflado",name:"Chaveiro inflado",kind:"modelo",cats:["chaveiros","personalizados","festas"],rank:3.5,added:29,tags:["novo","lote"],
- desc:"Nome fofinho com volume arredondado, como letra de balão, e argola plana. Fica ótimo em filamento seda.",
- tips:{"Camada":"0,12 mm (curva mais lisa)","Filamento":"Seda ou glitter","Suporte":"Não precisa","Preenchimento":"10%"},
- params:[G("Texto"),T("text","Texto","Luna",{max:16}),FSEL("font","Fonte","balao"),R("size","Altura da letra",20,10,40,1,"mm"),G("Volume"),R("inf","Altura do inflado",4,1,10,.5,"mm"),R("gord","Engordar letras",2.2,.5,5,.1,"mm"),R("base","Borda reta",1,.4,3,.2,"mm"),C("ring","Argola",true),G("Lote"),LOTE("text")],
- async build(p){
-  const t=(p.text||" ").slice(0,16),m=await measure(p.font,p.size,t);
-  const pad=p.gord+1,ringR=p.ring?4.6:0,startX=pad+(p.ring?ringR*2-1:0),tx=startX+m.l,W=startX+m.w+pad,H=m.h+pad*2,by=pad+m.a,cx=pad+ringR,cy=H/2;
-  const word=g=>{g.font=m.f;g.lineJoin="round";g.lineWidth=p.gord*2;g.strokeText(t,tx,by);g.fillText(t,tx,by)};
-  const ring=p.ring?g=>{circle(g,cx,cy,ringR);g.fillRect(cx,cy-2.4,startX-cx+p.gord+1.5,4.8);cut(g,gg=>circle(gg,cx,cy,2.3))}:null;
-  return [{name:"chaveiro",pos:inflate(W,H,autoRes(W,H,6,300000),word,p.base,p.inf,ring,p.base+1.4),c:0}];
+  const res=autoRes(W,H,6);
+  const bk=p.verso!=="liso"?await versoDraw(p,txt,startX,pad,W-startX-pad,H-2*pad):null;
+  if(!bk)return tone(p.duas,W,H,res,[{h:p.base,draw:outline}],p.base,[{h:p.relief,draw:txt}],["base","texto"]);
+  const back=within(mirW(W,bk),outline),dep=Math.min(p.versoP,p.base-.6);
+  if(!p.duas)return [{name:"chaveiro",pos:heightfield(W,H,res,[{h:p.base,draw:outline},{lo:dep,draw:back},{h:p.base+p.relief,draw:txt}]),c:0}];
+  return [{name:"base",pos:heightfield(W,H,res,[{h:p.base,draw:outline},{lo:dep,draw:back}]),c:0},{name:"texto",pos:shift(heightfield(W,H,res,[{h:p.relief,draw:txt}]),0,0,p.base),c:1},{name:"verso",pos:heightfield(W,H,res,[{h:dep,draw:back}]),c:1}].filter(x=>x.pos.length);
  }},
 {id:"letra-balao",name:"Letras balão",kind:"modelo",cats:["festas","nomes","personalizados"],rank:2.5,added:30,tags:["novo"],
  desc:"Letras e números inflados como balão metalizado. Para aniversário, mesversário, chá revelação e decoração de mesa.",
@@ -1395,7 +1486,8 @@ const ITEMS=[
  }},
 {id:"qr",name:"QR Code: Pix, Wi-Fi, WhatsApp",kind:"modelo",cats:["negocio","chaveiros","placas"],rank:6,added:9,tags:["novo"],
  desc:"Chaveiro ou placa de balcão com QR Code de Pix, Wi-Fi, WhatsApp ou link. O Pix sai no padrão BR Code do Banco Central.",
- tips:{"Camada":"0,2 mm","Cores":"Base branca, código preto","Teste":"Escaneie a tela antes de imprimir","Pix":"Confira nome e valor no app do banco"},
+ palette:["#F2EFE8","#15202B","#005BD4","#D6FF27"],
+ tips:{"Camada":"0,2 mm","Cores":"Placa clara, código escuro","Teste":"Escaneie a tela antes de imprimir","Pix":"Confira nome e valor no app do banco"},
  params:[G("Conteúdo"),SEG("tipo","Tipo","pix",[["link","Link"],["whatsapp","WhatsApp"],["wifi","Wi-Fi"],["pix","Pix"]]),
   T("conteudo","Link ou texto","https://instagram.com/fdgmaker",{show:p=>p.tipo==="link",max:200}),
   T("zap","WhatsApp com DDD","19999990000",{show:p=>p.tipo==="whatsapp",max:20}),T("msg","Mensagem inicial","Olá! Quero fazer um pedido.",{show:p=>p.tipo==="whatsapp",max:80}),
@@ -1403,25 +1495,46 @@ const ITEMS=[
   T("chave","Chave Pix (telefone com +55)","seu@email.com",{show:p=>p.tipo==="pix",max:77}),T("nome","Nome do recebedor","FDG Maker",{show:p=>p.tipo==="pix",max:25}),T("cidade","Cidade","Sao Paulo",{show:p=>p.tipo==="pix",max:15}),R("valor","Valor fixo (0 = cliente digita)",0,0,500,.5,"",{show:p=>p.tipo==="pix"}),
   T("legenda","Legenda","PIX",{max:20}),
   G("Formato"),SEG("formato","Formato","placa",[["chaveiro","Chaveiro"],["placa","Placa de balcão"]]),R("tam","Lado do código",60,25,150,1,"mm"),R("esp","Espessura",2.4,1.2,5,.2,"mm"),R("rel","Relevo do código",1,.4,3,.2,"mm"),
-  C("argola","Argola para corrente",true,{show:p=>p.formato==="chaveiro"}),R("baseD","Profundidade da base",30,15,60,1,"mm",{show:p=>p.formato==="placa"}),DUAS],
+  C("argola","Argola para corrente",true,{show:p=>p.formato==="chaveiro"}),R("baseD","Profundidade da base",30,15,60,1,"mm",{show:p=>p.formato==="placa"}),R("baseH","Altura da base",6,3,15,.5,"mm",{show:p=>p.formato==="placa"}),
+  G("Logo"),C("logoOn","Logo no centro do código",false),{k:"logo",t:"file",label:"Arquivo da logo (PNG ou JPG)",accept:"image/*",as:"image",nodraw:true,sample:sampleLogo,sampleName:"exemplo-estrela.png",show:p=>p.logoOn},
+  R("logoT","Tamanho da logo",22,12,28,1,"%",{show:p=>p.logoOn}),R("logoThr","Limiar da logo",50,5,95,1,"%",{show:p=>p.logoOn}),
+  ...VERSO(),
+  G("Cores"),C("duas","Peças separadas por cor (placa, conteúdo e base)",true)],
  async build(p){
   if(typeof qrcode==="undefined")throw new Error("Biblioteca de QR Code não carregou.");
-  const e=s=>String(s).replace(/([\\;,:"])/g,"\\$1");let data;
+  const e=s=>String(s).replace(/([\;,:"])/g,"\\$1");let data;
   if(p.tipo==="wifi")data=`WIFI:T:WPA;S:${e(p.rede)};P:${e(p.senha)};;`;
   else if(p.tipo==="whatsapp"){let n=String(p.zap||"").replace(/\D/g,"");if(n.length<8)throw new Error("Digite o número com DDD.");if(n.length<=11)n="55"+n;data=`https://wa.me/${n}${p.msg?"?text="+encodeURIComponent(p.msg):""}`}
   else if(p.tipo==="pix"){if(!String(p.chave||"").trim())throw new Error("Digite a chave Pix.");data=pixPayload(p.chave,p.nome,p.cidade,+p.valor)}
   else data=p.conteudo||" ";
   if(qrcode.stringToBytesFuncs&&qrcode.stringToBytesFuncs["UTF-8"])qrcode.stringToBytes=qrcode.stringToBytesFuncs["UTF-8"];
-  const qr=qrcode(0,"M");qr.addData(data);qr.make();const n=qr.getModuleCount(),mod=p.tam/(n+4);
+  const logo=p.logoOn&&p.logo&&p.logo.data;
+  const qr=qrcode(0,logo?"H":"M");qr.addData(data);qr.make();const n=qr.getModuleCount(),mod=p.tam/(n+4);
   const placa=p.formato==="placa",leg=(p.legenda||"").trim(),lh=leg?p.tam*.16:0,ringH=!placa&&p.argola?9:0,mg=placa?5:0;
   const W=p.tam+mg*2,H=p.tam+lh+ringH+mg*2,x0=mg,y0=ringH+mg;
   const res=Math.max(autoRes(W,H,4),Math.min(10,3.2/mod));
   const ml=leg?await fitText("display",lh*.6,leg,p.tam*.8):null;
-  const parts=tone(p.duas,W,H,res,[{h:p.esp,draw:g=>{rrect(g,0,ringH,W,H-ringH,3);if(ringH){rrect(g,W/2-7,1,14,ringH+4,5);cut(g,gg=>circle(gg,W/2,5.6,2.4))}}}],
-   p.esp,[{h:p.rel,draw:g=>{for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(qr.isDark(r,c))g.fillRect(x0+(c+2)*mod,y0+(r+2)*mod,mod+.02,mod+.02);if(ml)textAt(ml,leg,W/2,y0+p.tam+lh*.45)(g)}}],["placa","codigo"]);
+  const cx=x0+p.tam/2,cy=y0+p.tam/2;let lbox=0,ldraw=null;
+  if(logo){lbox=p.tam*p.logoT/100;const [iw,ih]=imgSize(p.logo.data),k=Math.min(lbox/iw,lbox/ih),dw=iw*k,dh=ih*k,mc=imageMask(p.logo.data,Math.max(8,Math.round(dw*res*1.5)),Math.max(8,Math.round(dh*res*1.5)),p.logoThr,false);
+    if(!mc)throw new Error("Nenhum traço na logo. Ajuste o limiar.");ldraw=g=>g.drawImage(mc,cx-dw/2,cy-dh/2,dw,dh)}
+  const half=lbox/2+mod*.6;
+  const plate=g=>{rrect(g,0,ringH,W,H-ringH,3);if(ringH){rrect(g,W/2-7,1,14,ringH+4,5);cut(g,gg=>circle(gg,W/2,5.6,2.4))}};
+  const mods=g=>{for(let r=0;r<n;r++)for(let c=0;c<n;c++){if(!qr.isDark(r,c))continue;const mx=x0+(c+2)*mod,my=y0+(r+2)*mod;if(logo&&Math.abs(mx+mod/2-cx)<half&&Math.abs(my+mod/2-cy)<half)continue;g.fillRect(mx,my,mod+.02,mod+.02)}if(ml)textAt(ml,leg,W/2,y0+p.tam+lh*.45)(g)};
+  const front=g=>{mods(g);if(ldraw)ldraw(g)};
+  const bk=p.verso!=="liso"?await versoDraw(p,front,x0,y0,p.tam,p.tam+lh):null,back=bk?within(mirW(W,bk),plate):null;
+  SHARP=true;let parts;
+  try{
+    const plateL=[{h:p.esp,draw:plate}];if(back)plateL.push({lo:p.versoP,draw:back});
+    if(!p.duas){parts=[{name:"placa",pos:heightfield(W,H,res,[...plateL,{h:p.esp+p.rel,draw:front}]),c:0}]}
+    else{parts=[{name:"placa",pos:heightfield(W,H,res,plateL),c:0},{name:"codigo",pos:shift(heightfield(W,H,res,[{h:p.rel,draw:mods}]),0,0,p.esp),c:1}];
+      if(ldraw)parts.push({name:"logo",pos:shift(heightfield(W,H,res,[{h:p.rel,draw:ldraw}]),0,0,p.esp),c:3});
+      if(back)parts.push({name:"verso",pos:heightfield(W,H,res,[{h:p.versoP,draw:back}]),c:1})}
+  }finally{SHARP=false}
+  parts=parts.filter(x=>x.pos.length);
   if(!placa)return parts;
-  const bh=6;for(const pt of parts){rotX(pt.pos);shift(pt.pos,0,p.esp/2,bh-1.5)}
-  const B=[];boxTris(B,-4,-p.baseD/2,0,W+4,p.baseD/2,bh);parts[0].pos=concat(parts[0].pos,new Float32Array(B));
+  const bh=p.baseH,sink=Math.min(1.5,bh-1);for(const pt of parts){rotX(pt.pos);shift(pt.pos,0,p.esp/2,bh-sink)}
+  const bW=W+8,bD=p.baseD,base=columns(bW,bD,autoRes(bW,bD,4,200000),-4,-bD/2,(x,y)=>(x>=0&&x<=W&&Math.abs(y)<=p.esp/2+.01)?[[0,bh-sink]]:[[0,bh]]);
+  if(p.duas)parts.push({name:"base",pos:base,c:2});else parts[0].pos=concat(parts[0].pos,base);
   return parts;
  }},
 {id:"nfc",name:"Chaveiro NFC",kind:"modelo",cats:["chaveiros","negocio"],rank:19.5,added:28,tags:["novo"],
@@ -1448,16 +1561,27 @@ const ITEMS=[
   {k:"img",t:"file",label:"Imagem (contorno)",accept:"image/*",as:"image",sample:samplePaw,sampleName:"exemplo-patinha.png",show:p=>p.modo==="imagem"},R("thr","Limiar",50,5,95,1,"%",{show:p=>p.modo==="imagem"}),
   R("tam","Tamanho",60,25,120,1,"mm"),R("esp","Espessura",4.4,3,8,.2,"mm"),
   G("Texto"),T("text","Texto","Lar doce lar",{max:24}),FSEL("font","Fonte","script"),R("tt","Tamanho do texto",9,4,25,.5,"mm"),R("rel","Relevo",1,.4,3,.2,"mm"),C("borda","Borda em relevo",true),
-  G("Ímã"),SEG("imaD","Diâmetro","12",[["8","8"],["10","10"],["12","12"],["15","15"],["20","20 mm"]]),R("imaH","Altura do ímã",3,1,5,.5,"mm"),R("folga","Folga",.2,0,.6,.05,"mm"),DUAS],
+  G("Ímã"),SEG("imaD","Diâmetro","12",[["8","8"],["10","10"],["12","12"],["15","15"],["20","20 mm"]]),R("imaH","Altura do ímã",3,1,5,.5,"mm"),R("folga","Folga",.2,0,.6,.05,"mm"),SEG("imaPos","Posição do ímã","verso",[["verso","Aparente no verso"],["dentro","Embutido"]]),R("piso","Piso abaixo do ímã",.8,.4,2,.2,"mm",{show:p=>p.imaPos==="dentro"}),DUAS],
  async build(p){
-  const ph=p.imaH+.2;if(p.esp<ph+.8)throw new Error("Aumente a espessura: o ímã precisa de 0,8 mm de teto.");
+  const ph=p.imaH+.2;if(p.imaPos!=="dentro"&&p.esp<ph+.8)throw new Error("Aumente a espessura: o ímã precisa de 0,8 mm de teto.");
   let W,H,fill,cx,cy;
   if(p.modo==="imagem"){const [iw,ih]=imgSize(p.img.data),k=p.tam/Math.max(iw,ih),dw=iw*k,dh=ih*k;W=dw+8;H=dh+8;const r0=autoRes(W,H,5);
     const mc=imageMask(p.img.data,Math.round(dw*r0),Math.round(dh*r0),p.thr,false);if(!mc)throw new Error("Nenhum traço encontrado. Ajuste o limiar.");fill=g=>dilate(g,gg=>gg.drawImage(mc,4,4,dw,dh),p.tam*.05);cx=W/2;cy=H/2}
   else{W=H=p.tam*1.1+2;cx=W/2;cy=H/2;const sh=shapeFor(p);fill=g=>sh.draw(g,W/2,H/2,p.tam);if(p.forma==="coracao")cy=H/2-p.tam*.04}
   const t=(p.text||"").trim(),m=t?await fitText(p.font,p.tt,t,p.tam*.7):null,r=(+p.imaD)/2+p.folga;
+  const res=autoRes(W,H,5),top=m?[{h:p.rel,draw:textAt(m,t,cx,cy)}]:[];
+  if(p.imaPos==="dentro"){
+    const fl=p.piso,tp=fl+ph,E=Math.max(p.esp,tp+.8);p=Object.assign({},p,{esp:E});
+    const F=maskOf(W,H,res,fill),C0=maskOf(W,H,res,g=>circle(g,cx,cy,r)),Rm=p.borda?maskOf(W,H,res,g=>rim(g,fill,1.6)):null,Tm=m&&!p.duas?maskOf(W,H,res,textAt(m,t,cx,cy)):null;
+    const at=(M,x,y)=>{const ix=Math.floor(x*res),rr=M.H-1-Math.floor(y*res);return ix>=0&&rr>=0&&ix<M.W&&rr<M.H&&M.m[rr*M.W+ix]};
+    const fn=(x,y)=>{if(!at(F,x,y))return null;let h=p.esp;if((Rm&&at(Rm,x,y))||(Tm&&at(Tm,x,y)))h=p.esp+(Rm&&at(Rm,x,y)?p.rel:0)+(Tm&&at(Tm,x,y)&&!(Rm&&at(Rm,x,y))?p.rel:0);
+      return at(C0,x,y)?[[0,fl],[tp,h]]:[[0,h]]};
+    const out=[{name:"ima",pos:columns(W,H,res,0,0,fn),c:0}];
+    if(p.duas&&m)out.push({name:"texto",pos:shift(heightfield(W,H,res,top),0,0,p.esp),c:1});
+    const o2=out.filter(x=>x.pos.length);o2.info=[["Pausa na impressão","Na primeira camada acima de {0} mm"],["Ímã","Coloque na pausa e continue: ele fica preso por dentro"],["Camada","0,2 mm"],["Suporte","Não precisa: o teto fecha em ponte curta"]];o2.info[0][1]=tr(o2.info[0][1]).replace("{0}",nf(tp,1));
+    return o2}
   const base=[{h:p.esp,draw:fill},{lo:ph,draw:g=>circle(g,cx,cy,r)}];if(p.borda)base.push({h:p.esp+p.rel,draw:g=>rim(g,fill,1.6)});
-  return tone(p.duas,W,H,autoRes(W,H,5),base,p.esp,m?[{h:p.rel,draw:textAt(m,t,cx,cy)}]:[],["ima","texto"]).filter(x=>x.pos.length);
+  return tone(p.duas,W,H,res,base,p.esp,top,["ima","texto"]).filter(x=>x.pos.length);
  }},
 {id:"carimbo",name:"Carimbo personalizado",kind:"modelo",cats:["negocio","personalizados","cozinha"],rank:21,added:24,tags:["novo"],
  desc:"Texto, logo ou desenho espelhado em relevo, com cabo separado. Para papel com almofada, argila, sabonete e biscoito.",
@@ -1723,18 +1847,6 @@ const ITEMS=[
     if(ax<7.05&&ay<7.05)return [[0,1.2]];if(ax<7.9&&ay<7.9)return [[0,1.2],[Hb-1.5,Hb]];return [[0,Hb]]};
   const parts=[{name:"corpo",pos:columns(W,H,res,0,0,fn),c:0}];if(p.comTecla)parts.push(...await keycapParts(p,W+6));return parts;
  }},
-{id:"moeda-carrinho",name:"Moeda de carrinho",kind:"modelo",cats:["chaveiros","negocio","personalizados"],rank:13.5,added:42,tags:["novo","lote"],
- desc:"Ficha no tamanho da moeda para destravar carrinho de supermercado, com haste de chaveiro e o seu texto. Brinde barato para loja e evento.",
- tips:{"Camada":"0,12 mm","Material":"PETG dura mais","Tamanho":"Confira no carrinho do seu mercado","Troca de cor":"Na camada do relevo"},
- params:[G("Moeda"),S("padrao","Tamanho","br1",[["br1","R$ 1 (27 mm)"],["eur1","€ 1 (23,25 mm)"],["usd25","US$ 0,25 (24,26 mm)"],["livre","Outro"]]),R("diam","Diâmetro",27,15,40,.05,"mm",{show:p=>p.padrao==="livre"}),R("esp","Espessura",1.95,1.2,3.5,.05,"mm",{show:p=>p.padrao==="livre"}),
-  C("haste","Haste com argola",true),G("Texto"),T("text","Texto ou emoji","K2",{max:8}),FSEL("font","Fonte","display"),DUAS,G("Lote"),LOTE("text")],
- async build(p){
-  const [d,e]={br1:[27,1.95],eur1:[23.25,2.33],usd25:[24.26,1.75]}[p.padrao]||[p.diam,p.esp],rl=.4,hl=p.haste?16:0,W=d+2,H=d+hl+2,cx=W/2,cy=1+d/2,t=(p.text||"").trim();
-  const emo=t&&/\p{Extended_Pictographic}/u.test(t),m=!t?null:emo?await measureEmoji(d*.5,t):await fitText(p.font,d*.42,t,d*.68);
-  const disc=g=>circle(g,cx,cy,d/2);
-  const base=[{h:e-rl,draw:g=>{disc(g);if(p.haste){rrect(g,cx-5,cy+d/2-2,10,hl+1,5);cut(g,gg=>circle(gg,cx,cy+d/2+hl-6,2.4))}}},{h:e,draw:g=>rim(g,disc,1.2)}];
-  return tone(p.duas,W,H,autoRes(W,H,9),base,e-rl,m?[{h:rl,draw:textAt(m,t,cx,cy)}]:[],["moeda","texto"]).filter(x=>x.pos.length);
- }},
 {id:"medalha",name:"Medalha",kind:"modelo",cats:["festas","personalizados","jogos"],rank:6.5,added:41,tags:["novo","duas cores"],
  desc:"Medalha com texto em arco em cima e embaixo, número ou emoji no centro e passador para a fita. Para campeonato, escola e gincana.",
  tips:{"Camada":"0,16 mm","Filamento":"Seda dourado, prata ou bronze","Troca de cor":"Na camada do relevo","Fita":"De 20 mm"},
@@ -1811,7 +1923,7 @@ const ITEMS=[
 {id:"litofania",name:"Litofania",kind:"ferramenta",cats:["imagem","personalizados","vasos"],rank:17,added:12,tags:["novo"],icon:"photo",
  desc:"Foto vira peça translúcida: plana, em coração, redonda ou em cilindro para luminária. Contra a luz, a imagem aparece.",
  tips:{"Orientação":"Em pé","Preenchimento":"100%","Filamento":"Branco","Luz":"LED de vela no cilindro"},
- params:[G("Imagem"),{k:"img",t:"file",label:"Foto (PNG, JPG)",accept:"image/*",as:"image",sample:samplePhoto,sampleName:"exemplo-paisagem.png"},C("inv","Inverter (claro fica grosso)",false),
+ params:[G("Imagem"),{k:"img",t:"file",label:"Foto (PNG, JPG)",accept:"image/*",as:"image",nodraw:true,sample:samplePhoto,sampleName:"exemplo-paisagem.png"},C("inv","Inverter (claro fica grosso)",false),
   G("Formato"),SEG("formato","Formato","plana",[["plana","Plana"],["coracao","Coração"],["circulo","Redonda"],["cilindro","Cilindro"]]),
   R("larg","Largura",100,40,200,5,"mm",{show:p=>p.formato!=="cilindro"}),R("diam","Diâmetro do cilindro",80,40,160,5,"mm",{show:p=>p.formato==="cilindro"}),R("altc","Altura do cilindro",90,40,200,5,"mm",{show:p=>p.formato==="cilindro"}),
   R("min","Espessura mínima",.8,.4,2,.1,"mm"),R("max","Espessura máxima",3.2,1.5,6,.1,"mm"),R("mold","Moldura",4,0,12,1,"mm"),
@@ -1836,7 +1948,7 @@ const ITEMS=[
 {id:"arte-camadas",name:"Foto em camadas de cor",kind:"ferramenta",cats:["imagem","personalizados"],rank:17.5,added:33,tags:["novo"],icon:"layers",palette:["#16181C","#5A5F66","#B4B7BB","#F4F4F2"],
  desc:"Transforma uma foto em até 4 tons empilhados. Cada tom sai como uma peça separada, pronta para troca de filamento ou AMS.",
  tips:{"Cores":"Do tom mais escuro ao mais claro","Camada":"0,08 a 0,12 mm","Arquivo":"Use o 3MF colorido","Troca":"Por camada ou com AMS"},
- params:[G("Imagem"),{k:"img",t:"file",label:"Foto (PNG, JPG)",accept:"image/*",as:"image",sample:samplePhoto,sampleName:"exemplo-paisagem.png"},R("tons","Número de tons",4,2,4,1),R("brilho","Brilho",0,-40,40,1,"%"),R("contr","Contraste",20,0,80,5,"%"),C("inv","Inverter tons",false),
+ params:[G("Imagem"),{k:"img",t:"file",label:"Foto (PNG, JPG)",accept:"image/*",as:"image",nodraw:true,sample:samplePhoto,sampleName:"exemplo-paisagem.png"},R("tons","Número de tons",4,2,4,1),R("brilho","Brilho",0,-40,40,1,"%"),R("contr","Contraste",20,0,80,5,"%"),C("inv","Inverter tons",false),
   G("Peça"),R("larg","Largura",100,40,200,5,"mm"),R("base","Espessura da base",1.2,.6,3,.2,"mm"),R("passo","Altura de cada tom",.4,.08,1.2,.04,"mm"),R("mold","Moldura",3,0,10,1,"mm")],
  async build(p){
   const img=p.img.data,[iw,ih]=imgSize(img),W=p.larg,H=W*ih/iw,res=autoRes(W,H,4,300000),Wp=Math.max(4,Math.round(W*res)),Hp=Math.max(4,Math.round(H*res)),lum=lumaCover(img,Wp,Hp),n=p.tons,fb=p.mold*res;
@@ -1878,7 +1990,7 @@ const ITEMS=[
 {id:"relevo-imagem",name:"Relevo de mapa de altura",kind:"ferramenta",cats:["imagem","personalizados"],rank:17.8,added:56,tags:["novo"],icon:"layers",
  desc:"Imagem em tons de cinza vira relevo: claro é alto, escuro é baixo. Para terrenos, mapas topográficos, brasões e texturas.",
  tips:{"Imagem":"Mapa de altura em tons de cinza","Camada":"0,12 mm","Orientação":"Deitado","Preenchimento":"10 a 15%"},
- params:[G("Imagem"),{k:"img",t:"file",label:"Imagem (PNG, JPG)",accept:"image/*",as:"image",sample:sampleTerrain,sampleName:"exemplo-terreno.png"},C("inv","Inverter (escuro fica alto)",false),R("suave","Suavizar",1,0,6,1),
+ params:[G("Imagem"),{k:"img",t:"file",label:"Imagem (PNG, JPG)",accept:"image/*",as:"image",nodraw:true,sample:sampleTerrain,sampleName:"exemplo-terreno.png"},C("inv","Inverter (escuro fica alto)",false),R("suave","Suavizar",1,0,6,1),
   G("Peça"),R("larg","Largura",100,30,220,5,"mm"),R("base","Espessura da base",2,.6,10,.2,"mm"),R("alt","Altura do relevo",14,1,60,.5,"mm"),SEG("det","Detalhe","0.5",[["0.8","Rascunho"],["0.5","Normal"],["0.35","Alto"]])],
  async build(p){
   const img=p.img.data,[iw,ih]=imgSize(img),cell=+p.det/Math.max(.5,QUAL),N=Math.max(4,Math.round(p.larg/cell)),M=Math.max(4,Math.round(p.larg*ih/iw/cell)),W=N+1,H=M+1;let l=lumaCover(img,W,H);
@@ -1891,7 +2003,7 @@ const ITEMS=[
  tips:{"Formatos":"STL binário ou texto","Medidas":"Caixa X × Y × Z","Peso":"Estimado com PLA","Privacidade":"O arquivo não sai do computador"},
  params:[G("Arquivo"),{k:"stl",t:"file",label:"Arquivo STL",accept:".stl",as:"buffer",sample:sampleSTL,sampleName:"exemplo: vaso torcido"}],
  async build(p){
-  const buf=p.stl.data;if(!buf){const it=byId.vaso;return [{name:"vaso",pos:lathe(defaults(it),false),c:0}]}
+  const buf=p.stl.data;if(!buf){const it=byId["vaso-perfil"];return [{name:"vaso",pos:lathe(defaults(it),false),c:0}]}
   return [{name:"modelo",pos:parseSTL(buf),c:0}];
  }}
 ];
@@ -1940,7 +2052,16 @@ function prepParts(parts){
   for(const p of parts){shift(p.pos,-ox,-oy,-oz);const a=p.pos;let v=0;for(let i=0;i<a.length;i+=9){v+=(a[i]*(a[i+4]*a[i+8]-a[i+5]*a[i+7])-a[i+1]*(a[i+3]*a[i+8]-a[i+5]*a[i+6])+a[i+2]*(a[i+3]*a[i+7]-a[i+4]*a[i+6]))/6}if(v<0){for(let i=0;i<a.length;i+=9)for(let k=0;k<3;k++){const t=a[i+3+k];a[i+3+k]=a[i+6+k];a[i+6+k]=t}}p.vol=Math.abs(v);vol+=p.vol;tris+=a.length/9}
   return {sx:mx[0]-mn[0],sy:mx[1]-mn[1],sz:mx[2]-mn[2],vol,tris};
 }
-function partsGroup(parts){const g=new THREE.Group();for(const p of parts){const geo=new THREE.BufferGeometry();geo.setAttribute("position",new THREE.BufferAttribute(p.pos,3));geo.computeVertexNormals();g.add(new THREE.Mesh(geo,mats[p.c]))}g.rotation.x=-Math.PI/2;return g}
+/* normais suaves só onde a dobra é pequena: paredes curvas ficam lisas e as quinas continuam marcadas */
+function creasedNormals(P,deg){const n=P.length/3,N=new Float32Array(P.length),cos=Math.cos((deg||40)*Math.PI/180);
+  const fx=new Float32Array(n/3*3);for(let t=0;t<P.length;t+=9){const ax=P[t+3]-P[t],ay=P[t+4]-P[t+1],az=P[t+5]-P[t+2],bx=P[t+6]-P[t],by=P[t+7]-P[t+1],bz=P[t+8]-P[t+2];const f=t/9*3;fx[f]=ay*bz-az*by;fx[f+1]=az*bx-ax*bz;fx[f+2]=ax*by-ay*bx}
+  const map=new Map();for(let v=0;v<n;v++){const k=Math.round(P[v*3]*1e3)+","+Math.round(P[v*3+1]*1e3)+","+Math.round(P[v*3+2]*1e3);let l=map.get(k);if(!l){l=[];map.set(k,l)}l.push(v)}
+  const un=f=>{const x=fx[f*3],y=fx[f*3+1],z=fx[f*3+2],a=Math.hypot(x,y,z)||1;return [x/a,y/a,z/a]};
+  for(const l of map.values()){const fs=l.map(v=>Math.floor(v/3)),us=fs.map(un);
+    for(let i=0;i<l.length;i++){let x=0,y=0,z=0;const u=us[i];for(let j=0;j<l.length;j++){const w=us[j];if(u[0]*w[0]+u[1]*w[1]+u[2]*w[2]>=cos){x+=fx[fs[j]*3];y+=fx[fs[j]*3+1];z+=fx[fs[j]*3+2]}}
+      const a=Math.hypot(x,y,z)||1;N[l[i]*3]=x/a;N[l[i]*3+1]=y/a;N[l[i]*3+2]=z/a}}
+  return N}
+function partsGroup(parts){const g=new THREE.Group();for(const p of parts){const geo=new THREE.BufferGeometry();geo.setAttribute("position",new THREE.BufferAttribute(p.pos,3));if(p.pos.length<4.5e6)geo.setAttribute("normal",new THREE.BufferAttribute(creasedNormals(p.pos,38),3));else geo.computeVertexNormals();g.add(new THREE.Mesh(geo,mats[p.c]))}g.rotation.x=-Math.PI/2;return g}
 function disposeGroup(g){if(!g)return;g.traverse(o=>{if(o.geometry)o.geometry.dispose()})}
 
 let V=null;
@@ -1967,7 +2088,7 @@ function viewer(){
 let TR=null;const thumbCache={};const thumbQ=[];let thumbBusy=false;
 function thumbRenderer(){if(TR||!hasGL)return TR;const r=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});r.setPixelRatio(1);r.setSize(420,280,false);r.setClearColor(0x000000,0);TR={r,scene:makeScene(),cam:new THREE.PerspectiveCamera(30,1.5,1,6000)};return TR}
 const isDark=()=>{const t=document.documentElement.dataset.theme;return t?t==="dark":matchMedia("(prefers-color-scheme: dark)").matches};
-function thumbKey(id){return "thumb12:"+id+":"+(isDark()?"d":"l")}
+function thumbKey(id){return "thumb13:"+id+":"+(isDark()?"d":"l")}
 function requestThumb(id){const k=thumbKey(id);if(thumbCache[k])return thumbCache[k];const st=LS.get(k,null);if(st){thumbCache[k]=st;return st}if(!thumbQ.includes(id))thumbQ.push(id);pumpThumbs();return null}
 function pumpThumbs(){if(thumbBusy||!thumbQ.length||!hasGL)return;thumbBusy=true;const id=thumbQ.shift();
   setTimeout(async()=>{try{const it=byId[id];const parts=await it.build(defaults(it));const st=prepParts(parts);const t=thumbRenderer();setMatColors(it.palette||defPal());
@@ -2076,17 +2197,17 @@ function renderParams(){
       const cb=f.querySelector("input"),ta=f.querySelector("textarea"),nt=f.querySelector(".note");cb.checked=v.on;ta.value=v.list;
       const upd=()=>{ta.hidden=!v.on;nt.hidden=!v.on;const n=batchList(v).length;nt.textContent=`${n} ${n===1?"arquivo":"arquivos"} no download (até 100). A prévia mostra o texto do campo acima.`;updDl()};
       cb.onchange=()=>{v.on=cb.checked;upd()};ta.oninput=()=>{v.list=ta.value;upd()};upd()}
-    else if(p.t==="seg"){f.innerHTML=`<label>${esc(p.label)}</label><div class="seg" role="group" aria-label="${esc(p.label)}">${p.opts.map(o=>`<button type="button" data-v="${o[0]}" aria-pressed="${String(s[p.k])===String(o[0])}">${esc(o[1])}</button>`).join("")}</div>`;
-      f.querySelector(".seg").onclick=e=>{const b=e.target.closest("button");if(!b)return;s[p.k]=b.dataset.v;f.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));rerenderIfDep();queue()}}
+    else if(p.t==="seg"){f.innerHTML=`<label>${esc(p.label)}</label><div class="${p.list?"optlist":"seg"}" role="group" aria-label="${esc(p.label)}">${p.opts.map(o=>`<button type="button" data-v="${o[0]}" aria-pressed="${String(s[p.k])===String(o[0])}">${p.list?`<b>${esc(o[1])}</b>${o[2]?`<small>${esc(o[2])}</small>`:""}`:esc(o[1])}</button>`).join("")}</div>`;
+      f.querySelector(".seg,.optlist").onclick=e=>{const b=e.target.closest("button");if(!b)return;s[p.k]=b.dataset.v;f.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));rerenderIfDep();queue()}}
     else if(p.t==="check"){f.innerHTML=`<label for="${id}"><input id="${id}" type="checkbox"> ${esc(p.label)}</label>`;const i=f.querySelector("input");i.checked=s[p.k];i.onchange=()=>{s[p.k]=i.checked;queue()}}
-    else if(p.t==="file"){f.innerHTML=`<label for="${id}">${esc(p.label)}</label><div class="file"><span class="fname" data-noi18n>${esc(s[p.k].name)}</span><div class="fbtns"><label class="btn sm" for="${id}" style="cursor:pointer">Escolher arquivo</label><button class="btn sm ghost" type="button">Usar exemplo</button>${p.as==="image"?'<button class="btn sm ghost" type="button" data-draw>Desenhar</button>':""}</div><input id="${id}" type="file" accept="${p.accept}" hidden></div>`;
+    else if(p.t==="file"){f.innerHTML=`<label for="${id}">${esc(p.label)}</label><div class="file"><span class="fname" data-noi18n>${esc(s[p.k].name)}</span><div class="fbtns"><label class="btn sm" for="${id}" style="cursor:pointer">Escolher arquivo</label><button class="btn sm ghost" type="button">Usar exemplo</button>${p.as==="image"&&!p.nodraw?'<button class="btn sm ghost" type="button" data-draw>Desenhar</button>':""}</div><input id="${id}" type="file" accept="${p.accept}" hidden></div>`;
       const inp=f.querySelector("input"),zone=f.querySelector(".file");
       const load=file=>{if(!file)return;const rd=new FileReader();rd.onerror=()=>toast("Não consegui ler o arquivo.");
         rd.onload=()=>{if(p.as==="image"){const im=new Image();im.onload=()=>{s[p.k]={name:file.name,data:im};needFit=true;renderParams();runFull()};im.onerror=()=>toast("Esse arquivo não é uma imagem válida.");im.src=rd.result}else{s[p.k]={name:file.name,data:rd.result};needFit=true;renderParams();runFull()}};
         if(p.as==="image")rd.readAsDataURL(file);else if(p.as==="text")rd.readAsText(file);else rd.readAsArrayBuffer(file)};
       inp.onchange=()=>load(inp.files[0]);
       f.querySelector("button").onclick=()=>{s[p.k]={name:p.sampleName,data:p.sample()};needFit=true;renderParams();runFull()};
-      zone.ondragover=e=>{e.preventDefault();zone.classList.add("drag")};zone.ondragleave=()=>zone.classList.remove("drag");zone.ondrop=e=>{e.preventDefault();zone.classList.remove("drag");load(e.dataTransfer.files[0])};if(p.as==="image")drawPad(f,p,s)}
+      zone.ondragover=e=>{e.preventDefault();zone.classList.add("drag")};zone.ondragleave=()=>zone.classList.remove("drag");zone.ondrop=e=>{e.preventDefault();zone.classList.remove("drag");load(e.dataTransfer.files[0])};if(p.as==="image"&&!p.nodraw)drawPad(f,p,s)}
     else if(p.t==="grid"){gridEditor(f,p,s)}
     else if(p.t==="profile"){f.innerHTML=`<label>${esc(p.label)}</label><canvas class="prof" width="300" height="230" aria-label="Editor do perfil do vaso"></canvas>`;profileEditor(f.querySelector("canvas"),s[p.k])}
     else{f.innerHTML=`<label for="${id}">${esc(p.label)}<span class="numw"><input class="num" type="number" min="${p.min}" max="${p.max}" step="${p.step}" aria-label="${esc(p.label)}" data-noi18n>${p.u?`<span>${esc(p.u)}</span>`:""}</span></label><input id="${id}" type="range" min="${p.min}" max="${p.max}" step="${p.step}">`;
@@ -2216,7 +2337,7 @@ async function pack3mf(parts,colored,cols,title){const te=new TextEncoder();
     {name:"3D/3dmodel.model",data:model3mf(parts,colored,cols,title)}]);
   return new Uint8Array(await blob.arrayBuffer());
 }
-window.__fatia={pack3mf,bt:async o=>{const it=byId.organizador,p=Object.assign(defaults(it),o),t0=performance.now();const parts=await it.build(p);const t1=performance.now();return {ms:Math.round(t1-t0),tris:parts.reduce((a,x)=>a+x.pos.length/9,0)}},go:id=>{location.hash="m-"+id},st:()=>state,run:()=>{renderParams();runFull()},get parts(){return lastParts},get pal(){return palOf(cur)}};
+window.__fatia={pack3mf,vb:async(id,o)=>{const it=byId[id],p=Object.assign(defaults(it),o);let parts=await it.build(p);prepParts(parts);return parts},bt:async o=>{const it=byId.organizador,p=Object.assign(defaults(it),o),t0=performance.now();const parts=await it.build(p);const t1=performance.now();return {ms:Math.round(t1-t0),tris:parts.reduce((a,x)=>a+x.pos.length/9,0)}},go:id=>{location.hash="m-"+id},st:()=>state,run:()=>{renderParams();runFull()},get parts(){return lastParts},get pal(){return palOf(cur)}};
 
 /* ---- entrega: direto no site hospedado, em .zip dentro do Claude ---- */
 const STANDALONE=!window.claude;let downloads=null,FMT=LS.get("fmt","stl");if(!["stl","3mf","3mfc"].includes(FMT))FMT="stl";
