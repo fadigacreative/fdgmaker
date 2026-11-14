@@ -332,7 +332,8 @@ footer .legal{border-top:1px solid var(--line);padding-block:16px;font-size:12.5
 [data-view="gerador"] .ghead h1{font-size:clamp(22px,2.3vw,30px)}
 [data-view="gerador"] .ghead p{font-size:14px;margin-top:2px;max-width:none;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 [data-view="gerador"] .ghead .tagrow{display:none}
-.pcolors .swatches{flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px}
+.pcolors .swatches{flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.pcolors .swatches::-webkit-scrollbar{display:none}
 .pcolors .swb{flex:none}
 .mcard .thumb{position:relative}
 .mcard .thumb .ph,.collage a .ph{display:grid;place-items:center;position:absolute;inset:0;left:0;bottom:0;width:auto;height:auto;color:var(--muted);opacity:.45}
@@ -2526,8 +2527,9 @@ function viewer(){
     mount(el){el.prepend(renderer.domElement);this.resize()},
     resize(){const el=renderer.domElement.parentElement;if(!el)return;const w=el.clientWidth,h=el.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()},
     set(parts,stats,fit){if(this.group){scene.remove(this.group);disposeGroup(this.group)}this.group=partsGroup(parts);scene.add(this.group);this.stats=stats;if(fit)this.fit()},
-    fit(dir){const s=this.stats;if(!s)return;const Rr=Math.max(s.sx,s.sy,s.sz,20);controls.target.set(0,s.sz/2,0);
-      if(dir==="top")camera.position.set(0,Rr*2.3,0.001);else if(dir==="front")camera.position.set(0,s.sz/2+Rr*.2,Rr*2.2);else camera.position.set(Rr*.95,Rr*.85+s.sz/2,Rr*1.35);controls.update()}
+    fit(dir){const s=this.stats;if(!s)return;const rad=Math.max(12,Math.hypot(s.sx,s.sy,s.sz)/2),asp=camera.aspect||1,half=17.5*Math.PI/180,hh=Math.atan(Math.tan(half)*Math.min(1,asp)),d=rad/Math.sin(hh)*1.08;
+      controls.target.set(0,s.sz/2,0);const v=dir==="top"?[0,1,.001]:dir==="front"?[0,.12,1]:[.62,.55,.9],l=Math.hypot(...v);
+      camera.position.set(v[0]/l*d,s.sz/2+v[1]/l*d,v[2]/l*d);controls.update()}
   };
   V.theme();new ResizeObserver(()=>V.resize()).observe($("#stage"));
   (function loop(){if(!$("#stage").closest("[hidden]")){controls.update();renderer.render(scene,camera)}requestAnimationFrame(loop)})();
