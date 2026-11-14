@@ -13,9 +13,10 @@
 <meta property="og:title" content="FDG Maker — modelos 3D personalizados grátis">
 <meta property="og:description" content="Mais de 50 geradores de STL e 3MF com prévia em 3D, grátis e sem cadastro.">
 <style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,-apple-system,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<meta name="google-adsense-account" content="ca-pub-6658862864929708">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6658862864929708" crossorigin="anonymous"></script>
 </head>
 <body>
-
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Montserrat:wght@800&family=Archivo+Black&family=Fredoka:wght@700&family=Baloo+2:wght@800&family=Titan+One&family=Luckiest+Guy&family=Pacifico&family=Dancing+Script:wght@700&family=Lobster&family=Kaushan+Script&family=Permanent+Marker&family=Playfair+Display:wght@800&family=Abril+Fatface&family=Bungee&family=Righteous&family=Bebas+Neue&family=Comfortaa:wght@700&family=Black+Ops+One&display=swap">
@@ -2892,9 +2893,9 @@ document.querySelectorAll(".curSel").forEach(sel=>{sel.innerHTML=CURS.map(c=>`<o
 /* ================= APOIAR ================= */
 /* Cole aqui os links de pagamento do dono do site. Só aparece na página o que estiver preenchido. */
 /* Google AdSense: cole aqui o ID do editor (ca-pub-...) e, se quiser blocos fixos, o ID do bloco. Vazio = sem anúncios e sem espaços vazios. */
-const ADS={client:"",slot:""};
+const ADS={client:"ca-pub-6658862864929708",slot:""};
 (function(){const boxes=[...document.querySelectorAll("aside.ad")];if(!ADS.client){boxes.forEach(b=>b.hidden=true);return}
-  const sc=document.createElement("script");sc.async=true;sc.src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client="+ADS.client;sc.crossOrigin="anonymous";document.head.appendChild(sc);
+  if(!document.querySelector('script[src*="adsbygoogle.js"]')){const sc=document.createElement("script");sc.async=true;sc.src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client="+ADS.client;sc.crossOrigin="anonymous";document.head.appendChild(sc)}
   if(!ADS.slot){boxes.forEach(b=>b.hidden=true);return}
   boxes.forEach(b=>{b.textContent="";b.classList.add("live");const i=document.createElement("ins");i.className="adsbygoogle";i.style.display="block";i.dataset.adClient=ADS.client;i.dataset.adSlot=ADS.slot;i.dataset.adFormat="auto";i.dataset.fullWidthResponsive="true";b.appendChild(i);try{(window.adsbygoogle=window.adsbygoogle||[]).push({})}catch(e){}})})();
 const SUPPORT={stripe:"",paypal:"",kofi:"",pix:{key:"7b7d5b5e-0434-4e32-82cb-f26a19f3f9aa",name:"LUIZ G DE C C FADIGA",city:"SAO JOAO DA B",code:"00020101021126580014br.gov.bcb.pix01367b7d5b5e-0434-4e32-82cb-f26a19f3f9aa5204000053039865802BR5920LUIZ G DE C C FADIGA6013SAO JOAO DA B62070503***6304DAF5"}};
