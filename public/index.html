@@ -188,9 +188,9 @@ select.sel,input.inp{font:14px var(--f-body);padding:9px 11px;border:1px solid v
 .ghead h1{font-size:clamp(28px,3.6vw,44px);font-weight:700}
 .ghead p{color:var(--muted);max-width:68ch;margin-top:6px}
 .ghead .tagrow{margin-top:10px}
-.editor{display:grid;grid-template-columns:350px 1fr;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--surface)}
-.panel{border-right:1px solid var(--line);display:flex;flex-direction:column;min-width:0}
-.params{padding:16px 18px;display:flex;flex-direction:column;gap:14px;overflow:auto;max-height:560px}
+.editor{display:grid;grid-template-columns:350px 1fr;height:clamp(500px,calc(100vh - 205px),820px);border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--surface)}
+.panel{border-right:1px solid var(--line);display:flex;flex-direction:column;min-width:0;min-height:0;overflow:hidden}
+.params{padding:16px 18px;display:flex;flex-direction:column;gap:14px;overflow:auto;flex:1 1 auto;min-height:120px}
 .group-title{font:500 11px var(--f-mono);text-transform:uppercase;letter-spacing:.1em;color:var(--muted);padding-top:6px;border-top:1px solid var(--line)}
 .group-title:first-child{border-top:0;padding-top:0}
 .field{display:grid;gap:6px}
@@ -216,11 +216,11 @@ select.sel,input.inp{font:14px var(--f-body);padding:9px 11px;border:1px solid v
 .file.drag{border-color:var(--accent-fg)}
 .file .fname{font:12px var(--f-mono);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .file .fbtns{display:flex;gap:6px;flex-wrap:wrap}
-.pcolors{padding:14px 18px;border-top:1px solid var(--line);display:grid;gap:8px;background:var(--sunk)}
+.pcolors{flex:none;padding:10px 18px;border-top:1px solid var(--line);display:grid;gap:8px;background:var(--sunk)}
 .pc-title{font:600 13px/1.2 var(--f-display);letter-spacing:.01em}
-.pcolors .parts{max-height:150px;overflow:auto}
-.panel .foot{margin-top:auto;padding:14px 18px;border-top:1px solid var(--line);display:grid;gap:8px}
-.stage{position:relative;min-height:560px;background:var(--plate);min-width:0}
+.pcolors .parts{max-height:110px;overflow:auto}
+.panel .foot{flex:none;margin-top:auto;padding:12px 18px;border-top:1px solid var(--line);display:grid;gap:8px}
+.stage{position:relative;min-height:0;background:var(--plate);min-width:0}
 .stage canvas{display:block;width:100%;height:100%;position:absolute;inset:0}
 .stagebar{position:absolute;top:10px;left:10px;display:flex;gap:6px;z-index:2}
 .stagebar button{border:1px solid var(--line);background:color-mix(in srgb,var(--surface) 90%,transparent);color:var(--ink);font:500 12px var(--f-body);padding:6px 10px;border-radius:7px;cursor:pointer}
@@ -231,10 +231,10 @@ select.sel,input.inp{font:14px var(--f-body);padding:9px 11px;border:1px solid v
 .busy{position:absolute;top:46px;right:12px;font:12px var(--f-mono);color:var(--muted);z-index:2;max-width:60%;text-align:right}
 .busy.err{color:var(--accent-fg)}
 @media (max-width:900px){
-  .editor{grid-template-columns:1fr}
-  .panel{border-right:0;border-top:1px solid var(--line);order:2}
-  .stage{min-height:380px}
-  .params{max-height:none}
+  .editor{grid-template-columns:1fr;height:auto}
+  .panel{border-right:0;border-top:1px solid var(--line);order:2;overflow:visible}
+  .stage{height:46vh;min-height:300px;position:sticky;top:0;z-index:5}
+  .params{max-height:none;overflow:visible}
 }
 .ginfo{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:14px}
 @media (max-width:900px){.ginfo{grid-template-columns:1fr}}
@@ -245,6 +245,10 @@ select.sel,input.inp{font:14px var(--f-body);padding:9px 11px;border:1px solid v
 .kv div:last-child{border-bottom:0}
 .kv span:last-child{font-family:var(--f-mono);font-variant-numeric:tabular-nums;text-align:right}
 .parts{display:grid;gap:8px}
+#dlNote:empty{display:none}
+.pchips{display:flex!important;flex-wrap:wrap;gap:6px!important}
+.pchip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 10px 3px 4px;font-size:13px;cursor:pointer}
+.pchip .sw{width:22px;height:22px}
 .parts div{display:flex;align-items:center;gap:10px;font-size:14px}
 .parts i{width:14px;height:14px;border-radius:4px;flex:none}
 
@@ -322,6 +326,14 @@ footer .legal{border-top:1px solid var(--line);padding-block:16px;font-size:12.5
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;z-index:40;opacity:0;transition:opacity .2s;pointer-events:none}
 .toast.show{opacity:1}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+/* cabeçalho compacto só na tela do gerador, para o editor caber inteiro na tela */
+[data-view="gerador"] .crumbs{padding-top:12px}
+[data-view="gerador"] .ghead{padding:6px 0 10px;gap:10px}
+[data-view="gerador"] .ghead h1{font-size:clamp(22px,2.3vw,30px)}
+[data-view="gerador"] .ghead p{font-size:14px;margin-top:2px;max-width:none;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+[data-view="gerador"] .ghead .tagrow{display:none}
+.pcolors .swatches{flex-wrap:nowrap;overflow-x:auto;padding-bottom:2px}
+.pcolors .swb{flex:none}
 </style>
 
 <header class="top">
@@ -2774,7 +2786,7 @@ function updDl(){const lote=cur&&cur.params.find(q=>q.t==="batch"),v=lote&&state
   $("#dl").textContent=v&&v.on?`Baixar lote (${batchList(v).length})`:FMT==="stl"?"Baixar STL":"Baixar 3MF";
   document.querySelectorAll("#fmt button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.v===FMT))}
 $("#fmt").onclick=e=>{const b=e.target.closest("button");if(!b)return;FMT=b.dataset.v;LS.set("fmt",FMT);updDl();fmtNote()};
-function fmtNote(){if(!STANDALONE&&!downloads)return;$("#dlNote").textContent=FMT==="stl"?"STL: um arquivo por peça. Abra no Bambu Studio, Orca, Prusa ou Cura.":FMT==="3mf"?"3MF: um arquivo só, com as peças já alinhadas.":"3MF colorido: um arquivo só, com cada peça na cor escolhida ao lado."}
+function fmtNote(){if(!STANDALONE&&!downloads)return;$("#dlNote").textContent="";$("#fmt").title=FMT==="stl"?"STL: um arquivo por peça. Abra no Bambu Studio, Orca, Prusa ou Cura.":FMT==="3mf"?"3MF: um arquivo só, com as peças já alinhadas.":"3MF colorido: um arquivo só, com cada peça na cor escolhida ao lado."}
 (async()=>{if(!STANDALONE){try{downloads=window.claude.use?await window.claude.use("downloads"):null}catch(e){downloads=null}
   if(!downloads){$("#dl").disabled=true;$("#dlNote").textContent="O download funciona ao abrir esta página no Claude.";return}}
   else $("#share").hidden=false;fmtNote()})();
@@ -2802,10 +2814,11 @@ $("#dl").onclick=async()=>{
 const FIL=["#FFFFFF","#1B1B1B","#8E9AA6","#D32F2F","#D6FF27","#F2B632","#2E9D4E","#1976D2","#7B3FB5","#E86FA5","#7A4A2B","#C9A227"];let actC=0;
 function renderParts(parts){
   const cols=palOf(cur);
-  $("#gParts").innerHTML=parts.map(p=>`<div><input type="color" class="sw" data-c="${p.c}" value="${cols[p.c]}" aria-label="Cor de ${esc(p.name)}"><span data-noi18n>${esc(p.name)}</span><span class="muted" style="margin-left:auto;font:12px var(--f-mono)">${nf(p.vol/1000)} cm³</span></div>`).join("")
+  const seen=new Set(),uniq=parts.filter(p=>!seen.has(p.c)&&seen.add(p.c));
+  $("#gParts").innerHTML=`<div class="pchips">`+uniq.map(p=>`<label class="pchip" title="${nf(parts.filter(q=>q.c===p.c).reduce((a,q)=>a+q.vol,0)/1000)} cm³"><input type="color" class="sw" data-c="${p.c}" value="${cols[p.c]}" aria-label="Cor de ${esc(p.name)}"><span data-noi18n>${esc(p.name)}</span></label>`).join("")+`</div>`
     +`<div class="swatches" data-noi18n>${FIL.map(c=>`<button type="button" class="swb" style="background:${c}" data-col="${c}" aria-label="${c}"></button>`).join("")}</div>`;
   if(!parts.some(p=>p.c===actC))actC=parts[0].c;
-  $("#gPartsNote").textContent=parts.length>1?"Clique na cor de uma peça e escolha o filamento. O 3MF colorido já sai com essas cores.":"Uma peça, uma cor. Modelos com relevo têm a opção Duas cores.";
+  $("#gPartsNote").textContent="";$("#gPartsNote").hidden=true;
 }
 function setCol(c,col){palOf(cur)[c]=col;setMatColors(palOf(cur));document.querySelectorAll(`#gParts .sw[data-c="${c}"]`).forEach(x=>x.value=col)}
 $("#gParts").addEventListener("input",e=>{const i=e.target.closest(".sw");if(!i)return;actC=+i.dataset.c;setCol(actC,i.value)});
