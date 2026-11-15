@@ -1,4 +1,5 @@
 import { EmailMessage } from "cloudflare:email";
+import R from "./routes.json";
 
 const ORIGINS = ["https://fdgmaker.com", "https://www.fdgmaker.com"];
 const json = (o, status = 200) => new Response(JSON.stringify(o), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" } });
@@ -33,10 +34,40 @@ async function contact(req, env) {
   return sent ? json({ ok: true }) : json({ ok: false, error: "send" }, 502);
 }
 
+const SEGS = {pt:"pt-br",en:"en",es:"es",de:"de",zh:"zh-cn",fr:"fr",ja:"ja",it:"it",ko:"ko",pl:"pl",ru:"ru",cs:"cs",nl:"nl",tr:"tr",zt:"zh-tw"};
+const B = "https://fdgmaker.com";
+const attr = (s) => String(s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;");
+async function page(req, env, url) {
+  let p = url.pathname;
+  if (!p.endsWith("/")) return Response.redirect(B + p + "/" + url.search, 301);
+  const r = R.routes[p];
+  const res = await env.ASSETS.fetch(new Request(new URL("/", url), req));
+  if (!r) return new Response(res.body, { status: 404, headers: res.headers });
+  const [l, v, t, d, g] = r, alts = R.groups[g] || {};
+  const links = Object.entries(alts).map(([k, u]) => `<link rel="alternate" hreflang="${R.href[k]}" href="${B}${u}">`).join("") +
+    (alts.en ? `<link rel="alternate" hreflang="x-default" href="${B}${alts.en}">` : "");
+  const paths = {}; for (const [k, u] of Object.entries(alts)) paths[k] = u;
+  const boot = `<script>window.__ROUTE=${JSON.stringify({ l, v })};window.__PATHS=${JSON.stringify(paths)};</script>`;
+  const out = new HTMLRewriter()
+    .on("html", { element(e) { e.setAttribute("lang", R.href[l]); } })
+    .on("head", { element(e) { e.prepend(boot, { html: true }); e.append(links, { html: true }); } })
+    .on("title", { element(e) { e.setInnerContent(t); } })
+    .on('meta[name="description"]', { element(e) { e.setAttribute("content", d); } })
+    .on('meta[property="og:title"]', { element(e) { e.setAttribute("content", t); } })
+    .on('meta[property="og:description"]', { element(e) { e.setAttribute("content", d); } })
+    .on('meta[property="og:url"]', { element(e) { e.setAttribute("content", B + p); } })
+    .on('link[rel="canonical"]', { element(e) { e.setAttribute("href", B + p); } })
+    .transform(res);
+  const h = new Headers(out.headers); h.set("content-language", R.href[l]); h.set("cache-control", "public, max-age=300");
+  return new Response(out.body, { status: 200, headers: h });
+}
+
 export default {
   async fetch(req, env) {
     const url = new URL(req.url);
     if (url.pathname === "/api/contact") return contact(req, env);
+    const seg = url.pathname.split("/")[1];
+    if (R.langs && Object.values(SEGS).includes(seg)) return page(req, env, url);
     return env.ASSETS.fetch(req);
   },
 };
