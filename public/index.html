@@ -1442,13 +1442,19 @@ const ITEMS=[
  params:[G("Forma"),SEG("forma","Formato","osso",shapeOpts(["osso","circulo","coracao"])),R("tam","Largura",40,25,70,1,"mm"),R("esp","Espessura",2.6,1.6,5,.2,"mm"),
   G("Texto"),T("nome","Nome","Thor",{max:12}),T("tel","Telefone","(19) 99999-0000",{max:18}),FSEL("font","Fonte do nome","round"),R("rel","Relevo",.8,.4,2,.2,"mm"),DUAS,G("Lote"),LOTE("nome")],
  async build(p){
-  const sh=SHAPES[p.forma],top=sh.top*p.tam,W=p.tam*1.1+4,H=p.tam*(p.forma==="osso"?.75:1.1)+12,cx=W/2,cy=6+top+2.5;
-  const fill=g=>sh.draw(g,cx,cy,p.tam);
+  const sh=SHAPES[p.forma],S=p.tam,osso=p.forma==="osso";
+  // argola: no osso fica acima da haste e ligada por um pescoço; nas outras formas encosta no topo
+  const R=4,rh=2,top=osso?S*.2:sh.top*S,W=S*1.1+4,H=S*(osso?.9:1.1)+12,cx=W/2,cy=6+top+2.5,ly=cy-top-(osso?2:1.5);
+  const fill=osso?g=>{const L=S*.32,h=S*.19,r=S*.17;g.fillRect(cx-L,cy-h,2*L,2*h);circle(g,cx-L,cy-h*.9,r);circle(g,cx-L,cy+h*.9,r);circle(g,cx+L,cy-h*.9,r);circle(g,cx+L,cy+h*.9,r)}:g=>sh.draw(g,cx,cy,S);
   const nm=(p.nome||" ").slice(0,12),tel=(p.tel||"").slice(0,18);
-  const k=p.forma==="osso"?.5:.62;const m1=await fitText(p.font,p.tam*.24,nm,p.tam*k);const m2=tel?await fitText("display",p.tam*.1,tel,p.tam*k):null;
-  const gap=m2?m2.h*.9:0,ny=cy-(m2?gap*.6:0);
-  return tone(p.duas,W,H,autoRes(W,H,8),[{h:p.esp,draw:g=>{fill(g);hangLoop(g,cx,cy-top-1.5,4,2)}}],p.esp,
-   [{h:p.rel,draw:g=>{textAt(m1,nm,cx,ny)(g);if(m2)textAt(m2,tel,cx,ny+m1.h/2+gap)(g)}}],["plaquinha","texto"]);
+  // área útil do texto (com margem da borda) para cada formato
+  const A=osso?{w:S*.5,h:S*.38-2.4,y:0}:p.forma==="coracao"?{w:S*.5,h:S*.36,y:-S*.06}:{w:S*.6,h:S*.48,y:0};
+  let f1=S*.24,f2=S*.1,m1,m2,gap,tot;
+  for(let i=0;i<4;i++){m1=await fitText(p.font,f1,nm,A.w);m2=tel?await fitText("display",f2,tel,A.w*.95):null;
+    gap=m2?Math.max(.9,m1.h*.28):0;tot=m1.h+(m2?gap+m2.h:0);if(tot<=A.h)break;const k=A.h/tot*.98;f1*=k;f2*=k}
+  const top0=cy+A.y-tot/2,y1=top0+m1.h/2,y2=top0+m1.h+gap+(m2?m2.h/2:0);
+  return tone(p.duas,W,H,autoRes(W,H,8),[{h:p.esp,draw:g=>{fill(g);if(osso)g.fillRect(cx-R*.9,ly,R*1.8,cy-S*.19-ly+1);hangLoop(g,cx,ly,R,rh)}}],p.esp,
+   [{h:p.rel,draw:g=>{textAt(m1,nm,cx,y1)(g);if(m2)textAt(m2,tel,cx,y2)(g)}}],["plaquinha","texto"]);
  }},
 {id:"placa-aviso",name:"Placa de aviso",kind:"modelo",cats:["placas","negocio","parede"],rank:10,added:2,tags:[],
  desc:"Placa retangular com borda, até duas linhas de texto e furos para parafuso. Para porta, sala e balcão.",
