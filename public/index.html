@@ -694,7 +694,7 @@ footer .legal{border-top:1px solid var(--line);padding-block:16px;font-size:12.5
 "use strict";
 const $=s=>document.querySelector(s);
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const LS={get(k,d){try{const v=localStorage.getItem("fatia:"+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem("fatia:"+k,JSON.stringify(v))}catch(e){}}};
 const toastEl=$("#toast");let toastT=0;
 function toast(m){toastEl.textContent=m;toastEl.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>toastEl.classList.remove("show"),2200)}
@@ -1197,8 +1197,8 @@ function gridEditor(f,p,s){
     for(const d of G.divs){if(d===hover||(drag&&drag.d===d)){g.fillStyle=accF;g.fillRect(X(d.x)-(d.ax?2:0),Y(d.y+d.h)-(d.ax?0:2),Math.max(4,d.w*G.sc),Math.max(4,d.h*G.sc))}}
     g.textAlign="left";g.font=`500 11px "IBM Plex Mono", monospace`;g.fillStyle=mut;
     if(keep!==true)renderCell()};
-  const renderCell=()=>{if(!gridSel){cellBox.innerHTML="";return}const v=gridSel.f||0;
-    cellBox.innerHTML=`<div class="field"><label for="ge-f">Altura do fundo deste compartimento<output data-noi18n>${nf(v,0)} mm</output></label><input id="ge-f" type="range" min="0" max="${Math.max(1,Math.floor(trayDims(s).H-3))}" step="1" value="${v}"></div>`;
+  const renderCell=()=>{if(!gridSel){cellBox.innerHTML="";return}const v=Math.max(0,Number(gridSel.f)||0);gridSel.f=v;
+    cellBox.innerHTML=`<div class="field"><label for="ge-f">Altura do fundo deste compartimento<output data-noi18n>${esc(nf(v,0))} mm</output></label><input id="ge-f" type="range" min="0" max="${Math.max(1,Math.floor(trayDims(s).H-3))}" step="1" value="${esc(v)}"></div>`;
     const r=cellBox.querySelector("input"),o=cellBox.querySelector("output");r.onpointerdown=()=>push();r.oninput=()=>{gridSel.f=+r.value;o.textContent=nf(+r.value,0)+" mm";draw(true);queue()};r.onchange=()=>runFull()};
   const at=e=>{const b=cv.getBoundingClientRect(),px=e.clientX-b.left,py=e.clientY-b.top;return [(px-geo.ox)/geo.sc,geo.D-(py-geo.pad)/geo.sc,px,py]};
   const hitDiv=(x,y)=>{const tol=Math.max(5/geo.sc,s.part/2+.5);for(const d of geo.divs){if(d.ax){if(Math.abs(x-d.pos)<tol&&y>=d.y-.5&&y<=d.y+d.h+.5)return d}else if(Math.abs(y-d.pos)<tol&&x>=d.x-.5&&x<=d.x+d.w+.5)return d}return null};
@@ -2855,11 +2855,24 @@ $("#rand").onclick=()=>{const s=state[cur.id],skip=["tipo","formato","modo","det
     else if(p.fonts)s[p.k]=pick(Object.keys(FONTS));
     else if((p.t==="seg"||p.t==="select")&&!skip.includes(p.k)){const o=(typeof p.opts==="function"?p.opts():p.opts).filter(x=>!["imagem","letra","emoji"].includes(x[0]));if(o.length)s[p.k]=pick(o)[0]}}
   needFit=true;renderParams();runFull();toast("Combinação aleatória")};
-$("#share").onclick=async()=>{const s=state[cur.id],o={};for(const p of cur.params)if(p.k&&p.t!=="file"&&p.t!=="batch")o[p.k]=s[p.k];
+function cleanGrid(n,depth,cnt){if(!n||typeof n!=="object"||Array.isArray(n)||depth>8||++cnt.n>200)throw 0;
+  if(!n.c){const f=Number(n.f);return {f:Number.isFinite(f)?Math.max(0,Math.min(500,f)):0}}
+  if(n.a!=="x"&&n.a!=="y"||!Array.isArray(n.c)||!Array.isArray(n.w)||n.c.length<2||n.c.length>30||n.w.length!==n.c.length)throw 0;
+  const w=n.w.map(Number);if(w.some(x=>!Number.isFinite(x)||x<=0||x>1e4))throw 0;return {a:n.a,w,c:n.c.map(ch=>cleanGrid(ch,depth+1,cnt))}}
+function cleanShared(p,v,d){try{
+  if(p.t==="grid")return cleanGrid(v,0,{n:0});
+  if(p.t==="profile"){if(!Array.isArray(v)||v.length!==d.length)return;const a=v.map(Number);return a.every(x=>Number.isFinite(x)&&x>=0&&x<=1.5)?a:undefined}
+  if(p.t==="check")return typeof v==="boolean"?v:undefined;
+  if(p.t==="text")return typeof v==="string"?v.slice(0,p.max||40):undefined;
+  if(p.t==="select"||p.t==="seg"){const opts=typeof p.opts==="function"?p.opts():p.opts;if(p.fonts)return typeof v==="string"&&FONTS[v]?v:undefined;return opts.some(o=>String(o[0])===String(v))?(typeof d==="number"?Number(v):v):undefined}
+  if(typeof d==="number"){const n=Number(v);if(!Number.isFinite(n))return;return Math.max(p.min??-Infinity,Math.min(p.max??Infinity,n))}
+  return typeof v===typeof d&&typeof v!=="object"?v:undefined}catch(e){return undefined}}
+const NOSHARE={qr:["senha","chave","nome","cidade"]};
+$("#share").onclick=async()=>{const s=state[cur.id],o={},ns=NOSHARE[cur.id]||[];for(const p of cur.params)if(p.k&&p.t!=="file"&&p.t!=="batch"&&!ns.includes(p.k))o[p.k]=s[p.k];
   const u=location.href.split(/[?#]/)[0]+"?m="+cur.id+"&p="+encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(o)))))+"#m-"+cur.id;
   try{await navigator.clipboard.writeText(u);toast("Link copiado")}catch(e){$("#dlNote").textContent=u}};
 try{const q=new URLSearchParams(location.search),m=q.get("m"),pp=q.get("p");
-  if(m&&byId[m]&&pp){const o=JSON.parse(decodeURIComponent(escape(atob(pp)))),d=defaults(byId[m]);for(const p of byId[m].params)if(p.k&&p.t!=="file"&&p.t!=="batch"&&o[p.k]!==undefined&&typeof o[p.k]===typeof d[p.k])d[p.k]=o[p.k];state[m]=d}}catch(e){}
+  if(m&&byId[m]&&pp){const o=JSON.parse(decodeURIComponent(escape(atob(pp)))),d=defaults(byId[m]);for(const p of byId[m].params)if(p.k&&p.t!=="file"&&p.t!=="batch"&&o[p.k]!==undefined){const v=cleanShared(p,o[p.k],d[p.k]);if(v!==undefined)d[p.k]=v}state[m]=d}}catch(e){}
 
 /* ================= DESENHO À MÃO E PERFIL ================= */
 const pads={},padOpen={};
