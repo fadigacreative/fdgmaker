@@ -2491,6 +2491,394 @@ const ITEMS=[
   return [{name:"modelo",pos:parseSTL(buf),c:0}];
  }}
 ];
+/* ================= MODELOS — LOTE 2 (contornos vetoriais lisos) ================= */
+/* esboço 2D em mm (y para baixo) extrudado entre z0 e z1, com contorno liso */
+function sk(W,H,draw,z0,z1,want){const res=autoRes(W,H,want||10,600000),M=maskOf(W,H,res,draw);return new Float32Array(extrudeShapes(maskShapes(M.m,M.W,M.H,1/M.res),z0,z1))}
+/* mesma coisa, mas o desenho vira uma peça em pé (desenho no plano XZ, espessura em Y a partir de y0) */
+function skUp(W,H,draw,y0,t,want){return shift(rotX(sk(W,H,draw,0,t,want)),0,y0+t,0)}
+function rotZ(pos,a){const c=Math.cos(a),s=Math.sin(a);for(let i=0;i<pos.length;i+=3){const x=pos[i],y=pos[i+1];pos[i]=x*c-y*s;pos[i+1]=x*s+y*c}return pos}
+function rotXa(pos,a){const c=Math.cos(a),s=Math.sin(a);for(let i=0;i<pos.length;i+=3){const y=pos[i+1],z=pos[i+2];pos[i+1]=y*c-z*s;pos[i+2]=y*s+z*c}return pos}
+function rotYa(pos,a){const c=Math.cos(a),s=Math.sin(a);for(let i=0;i<pos.length;i+=3){const x=pos[i],z=pos[i+2];pos[i]=x*c+z*s;pos[i+2]=-x*s+z*c}return pos}
+const cylZ=(cx,cy,r,z0,z1,n)=>shift(revolve(z1-z0,1,n||72,()=>r),cx,cy,z0);
+const tubeZ=(cx,cy,ro,ri,z0,z1,n)=>shift(revolve(z1-z0,1,n||72,()=>ro,()=>ri),cx,cy,z0);
+const coneZ=(cx,cy,r0,r1,z0,z1,n)=>shift(revolve(z1-z0,8,n||72,z=>r0+(r1-r0)*z/(z1-z0)),cx,cy,z0);
+const boxZ=(x0,y0,z0,x1,y1,z1)=>{const P=[];boxTris(P,x0,y0,z0,x1,y1,z1);return new Float32Array(P)};
+const hexPts=(cx,cy,af)=>{const r=af/2/Math.cos(Math.PI/6),o=[];for(let i=0;i<6;i++){const t=Math.PI/6+i*Math.PI/3;o.push([cx+r*Math.cos(t),cy+r*Math.sin(t)])}return o};
+const holeC=(g,x,y,r)=>cut(g,gg=>circle(gg,x,y,r));
+const strokePath=(g,pts,w,close)=>{g.save();g.lineWidth=w;g.lineCap="round";g.lineJoin="round";g.beginPath();pts.forEach((p,i)=>i?g.lineTo(p[0],p[1]):g.moveTo(p[0],p[1]));if(close)g.closePath();g.stroke();g.restore()};
+const screwHoles=(g,pts,d)=>pts.forEach(([x,y])=>holeC(g,x,y,d/2));
+const P1=(name,pos,c)=>({name,pos,c:c||0});
+/* rosca externa: raio em função de z e do ângulo */
+const threadR=(rMaj,pitch)=>(z,t)=>rMaj-.6*pitch+.6*pitch*thrV(z,t,pitch);
+/* soquete quadrado/retangular para sarrafo, aberto em +z, a partir da origem */
+const socket=(a,b,L,t,cx,cy,z0)=>sk(a+2*t,b+2*t,g=>{g.fillRect(0,0,a+2*t,b+2*t);cut(g,gg=>gg.fillRect(t,t,a,b))},0,L).map((v,i)=>v+(i%3===0?cx-a/2-t:i%3===1?cy-b/2-t:z0));
+function sarrafoParts(p,a,b){
+  const t=p.parede,L=p.enc,s=Math.max(a,b)+2*t,hub=boxZ(-a/2-t,-b/2-t,-s/2,a/2+t,b/2+t,s/2);
+  const dirs={L:["+x","+y"],T:["+x","-x","+y"],X:["+x","-x","+y","-y"],canto:["+x","+y","+z"],reto:["+x","-x"],cinco:["+x","-x","+y","-y","+z"]}[p.tipo]||["+x","+y"];
+  const out=[hub];
+  for(const d of dirs){let s1=socket(a,b,L,t,0,0,s/2-.01);
+    if(d==="-z")s1=rotXa(s1,Math.PI);else if(d==="+x")s1=rotYa(s1,Math.PI/2);else if(d==="-x")s1=rotYa(s1,-Math.PI/2);else if(d==="+y")s1=rotXa(s1,-Math.PI/2);else if(d==="-y")s1=rotXa(s1,Math.PI/2);
+    out.push(s1)}
+  const all=concat(...out),bb=bbox(all);return [P1("conector",shift(all,-bb.mn[0],-bb.mn[1],-bb.mn[2]))];
+}
+const SARRAFO_TIPOS=[["reto","Emenda reta"],["L","L (90°)"],["T","T"],["X","Cruz"],["canto","Canto 3D"],["cinco","5 vias"]];
+
+const ITEMS2=[
+{id:"anel",name:"Anel",kind:"modelo",cats:["bijuteria","personalizados"],rank:40,added:56,tags:["novo"],
+ desc:"Anel com aro no tamanho brasileiro, largura e espessura ajustáveis e perfil reto, abaulado ou chanfrado.",
+ tips:{"Camada":"0,08 a 0,12 mm","Paredes":"Todas (100%)","Material":"PLA seda ou resina","Medida":"Aro BR = circunferência interna − 40 mm"},
+ params:[G("Medidas"),R("aro","Aro (tamanho BR)",18,8,35,1),R("larg","Largura",4,2,12,.5,"mm"),R("esp","Espessura",1.8,1,4,.1,"mm"),SEG("perfil","Perfil","abaulado",[["reto","Reto"],["abaulado","Abaulado"],["chanfro","Chanfrado"]])],
+ async build(p){const ri=(p.aro+40)/Math.PI/2,h=p.larg,e=p.esp;
+  const ro=z=>{const u=Math.abs(z/h*2-1);return ri+(p.perfil==="reto"?e:p.perfil==="abaulado"?.5+(e-.5)*Math.sqrt(Math.max(0,1-u*u)):e-Math.max(0,u-.6)*e*.9)};
+  return [P1("anel",revolve(h,Math.ceil(h/.1),144,ro,()=>ri))]}},
+{id:"litofania-chaveiro",name:"Chaveiro litofania",kind:"modelo",cats:["chaveiros","imagem","personalizados"],rank:41,added:57,tags:["novo"],
+ desc:"Sua foto em um chaveiro translúcido em forma de coração ou redondo, com argola. Contra a luz, a imagem aparece.",
+ tips:{"Orientação":"Em pé","Preenchimento":"100%","Filamento":"Branco","Camada":"0,12 mm"},
+ params:[G("Foto"),{k:"img",t:"file",label:"Foto (PNG, JPG)",accept:"image/*",as:"image",nodraw:true,sample:()=>samplePhoto(),sampleName:"exemplo-paisagem.png"},C("inv","Inverter",false),
+  G("Formato"),SEG("formato","Formato","coracao",[["coracao","Coração"],["circulo","Redondo"]]),R("larg","Largura",45,30,70,1,"mm")],
+ async build(p){const it=byId["litofania"];return it.build(Object.assign(defaults(it),{img:p.img,inv:p.inv,formato:p.formato,larg:p.larg,min:.6,max:2.6,mold:2.5,argola:true,det:"0.3"}))}},
+{id:"chaveiro-letra",name:"Chaveiro de letra",kind:"modelo",cats:["chaveiros","personalizados","nomes"],rank:42,added:58,tags:["novo","duas cores"],
+ desc:"A inicial grande, com contorno e argola. Escolha a fonte e se a letra fica em relevo sobre a base.",
+ tips:{"Camada":"0,16 mm","Troca de cor":"Na camada da letra","Suporte":"Não precisa","Dica":"Fontes grossas ficam mais firmes"},
+ params:[G("Letra"),T("letra","Letra","G",{max:2}),FSEL("font","Fonte","heavy"),R("alt","Altura da letra",40,20,80,1,"mm"),R("borda","Contorno",2.5,1,6,.5,"mm"),R("esp","Espessura da base",3,2,6,.2,"mm"),R("rel","Relevo da letra",1.2,0,3,.2,"mm"),DUAS],
+ async build(p){const txt=(p.letra||"A").trim()||"A",m=await fitText(p.font,p.alt*1.25,txt,p.alt*1.6),W=m.w+2*p.borda+14,H=m.h+2*p.borda+14,cx=W/2,cy=H/2+3,d=p.borda;
+  const base=g=>{dilate(g,gg=>textAt(m,txt,cx,cy)(gg),d);const ty=cy-m.h/2-d+1.5;circle(g,cx,ty-2,5);hangLoop(g,cx,ty-2,5,2.4)};
+  return tone(p.duas,W,H,autoRes(W,H,10),[{h:p.esp,draw:g=>{base(g);cut(g,gg=>circle(gg,cx,cy-m.h/2-d+1.5-2,2.4))}}],p.esp,p.rel>0?[{h:p.rel,draw:textAt(m,txt,cx,cy)}]:[],["base","letra"]).filter(x=>x.pos.length)}},
+{id:"pe-nivelador",name:"Pé nivelador com rosca",kind:"modelo",cats:["mecanica","organizacao"],rank:43,added:59,tags:["novo"],
+ desc:"Pé de móvel com rosca para nivelar: base larga e haste roscada no diâmetro que você escolher. Imprime em pé, sem suporte.",
+ tips:{"Camada":"0,16 mm","Paredes":"4","Preenchimento":"40%","Rosca":"Teste com a porca antes de imprimir vários"},
+ params:[G("Rosca"),S("m","Rosca métrica","8",Object.keys(ISO_M).map(k=>[k,"M"+k])),R("hr","Comprimento da rosca",25,8,60,1,"mm"),G("Base"),R("db","Diâmetro da base",30,15,70,1,"mm"),R("hb","Altura da base",8,4,20,.5,"mm")],
+ async build(p){const d=+p.m,[pitch]=ISO_M[d],rb=p.db/2,hb=p.hb;
+  const base=revolve(hb,Math.ceil(hb/.3),96,z=>rb-Math.max(0,z-(hb-1.5))*0.8-Math.max(0,1.2-z)*.6);
+  const rod=shift(revolve(p.hr,Math.ceil(p.hr/(pitch/10)),96,(z,t)=>z>p.hr-pitch?Math.min(threadR(d/2-.1,pitch)(z,t),d/2-.1-(z-(p.hr-pitch))*.6):threadR(d/2-.1,pitch)(z,t)),0,0,hb-.2);
+  return [P1("pé",concat(base,rod))]}},
+{id:"comedouro-elevado",name:"Comedouro elevado com nome",kind:"modelo",cats:["pets","personalizados"],rank:44,added:60,tags:["novo","duas cores"],
+ desc:"Suporte elevado para a tigela do pet com o nome em relevo na frente. Defina o diâmetro da tigela e a altura.",
+ tips:{"Camada":"0,2 mm","Preenchimento":"15%","Suporte":"Não precisa","Medida":"Meça a tigela logo abaixo da borda"},
+ params:[G("Tigela"),R("dt","Diâmetro da tigela (abaixo da borda)",150,80,240,1,"mm"),R("alt","Altura do suporte",90,40,200,1,"mm"),R("par","Parede",3,2,6,.5,"mm"),G("Nome"),T("nome","Nome","Thor",{max:12}),FSEL("font","Fonte","round"),R("rel","Relevo",1.2,.6,3,.2,"mm"),DUAS],
+ async build(p){const D=p.dt+30,W=D,H=p.alt,t=p.par,top=sk(W,W,g=>{rrect(g,0,0,W,W,8);holeC(g,W/2,W/2,p.dt/2)},H-4,H);
+  const walls=sk(W,W,g=>{rrect(g,0,0,W,W,8);cut(g,gg=>rrect(gg,t,t,W-2*t,W-2*t,Math.max(1,8-t)))},0,H-3.9);
+  const arch=skUp(W,H*.55,g=>{g.fillRect(0,0,W,H*.55);cut(g,gg=>{gg.beginPath();gg.ellipse(W/2,H*.55,W*.32,H*.4,0,0,7);gg.fill()})},-.01,0.02);
+  const m=await fitText(p.font,Math.min(H*.32,30),(p.nome||" "),W*.8),nm=skUp(W,H,textAt(m,p.nome||" ",W/2,H*.4),-p.rel,p.rel);
+  const body=concat(top,walls);return p.duas?[P1("suporte",body),P1("nome",nm,1)]:[P1("suporte",concat(body,nm))]}},
+{id:"expositor-chaveiros",name:"Expositor de chaveiros",kind:"modelo",cats:["negocio","organizacao","chaveiros"],rank:45,added:61,tags:["novo"],
+ desc:"Painel de mesa com pinos para pendurar chaveiros e o nome da sua loja no topo, com base de encaixe. Ideal para feira e balcão.",
+ tips:{"Camada":"0,2 mm","Preenchimento":"15%","Orientação":"Deitado, como na tela","Montagem":"Encaixe o painel na base"},
+ params:[G("Painel"),R("cols","Colunas de pinos",5,2,8,1),R("lins","Linhas de pinos",3,1,6,1),R("esp","Espaço entre pinos",30,20,45,1,"mm"),R("pino","Comprimento do pino",25,12,40,1,"mm"),G("Texto"),T("loja","Nome da loja","Minha Loja",{max:20}),FSEL("font","Fonte","display")],
+ async build(p){const W=p.cols*p.esp+10,Ht=22,H=p.lins*p.esp+Ht+10,t=4,m=await fitText(p.font,12,p.loja||" ",W-16);
+  const board=sk(W,H,g=>rrect(g,0,0,W,H,6),0,t),txt=sk(W,H,textAt(m,p.loja||" ",W/2,12),t-.01,t+1);
+  const pins=[];for(let r=0;r<p.lins;r++)for(let c=0;c<p.cols;c++){const x=5+p.esp*(c+.5),y=H-(Ht+5+p.esp*(r+.4));pins.push(cylZ(x,y,2.6,t-.1,t+p.pino),cylZ(x,y,4,t+p.pino-2.2,t+p.pino))}
+  const foot=sk(W,26,g=>rrect(g,0,0,W,26,4),0,t),slot=sk(W,26,g=>{g.fillRect(0,4,W,18);cut(g,gg=>gg.fillRect(4,11,W-8,t+.4))},t-.01,t+8);
+  return [P1("painel",concat(board,txt,...pins)),P1("base",shift(concat(foot,slot),0,-34,0))]}},
+{id:"nome-mesa",name:"Placa de mesa com nome",kind:"modelo",cats:["mesa","nomes","negocio","personalizados"],rank:46,added:62,tags:["novo","duas cores"],
+ desc:"Prisma de mesa com nome e cargo em relevo na face inclinada. Para escritório, recepção e evento.",
+ tips:{"Camada":"0,16 mm","Troca de cor":"Na camada do texto","Orientação":"Deitado na base","Suporte":"Não precisa"},
+ params:[G("Texto"),T("nome","Nome","Ana Souza",{max:24}),T("cargo","Cargo","Gerente",{max:30}),FSEL("font","Fonte","display"),G("Placa"),R("larg","Largura",160,80,250,5,"mm"),R("alt","Altura da face",45,30,70,1,"mm"),R("ang","Inclinação",65,45,80,1,"°"),DUAS],
+ async build(p){const L=p.larg,F=p.alt,a=p.ang*Math.PI/180,dep=F*Math.cos(a),hz=F*Math.sin(a);
+  const body=shift(rotZ(skUp(dep+8,hz,g=>poly(g,[[0,hz],[dep,0],[dep+8,0],[dep+8,hz]]),0,L),Math.PI/2),L,0,0);
+  const m1=await fitText(p.font,F*.38,p.nome||" ",L*.88),m2=p.cargo?await fitText(p.font,F*.18,p.cargo,L*.8):null;
+  const face=sk(L,F,g=>{textAt(m1,p.nome||" ",L/2,m2?F*.4:F/2)(g);if(m2)textAt(m2,p.cargo,L/2,F*.78)(g)},-.05,1);
+  const tt=rotXa(face,a);
+  return p.duas?[P1("placa",body),P1("texto",tt,1)]:[P1("placa",concat(body,tt))]}},
+{id:"tripe-mesa",name:"Tripé de mesa para câmera",kind:"modelo",cats:["suportes","mesa"],rank:47,added:63,tags:["novo"],
+ desc:"Mini tripé de mesa em peça única com encaixe para porca de 1/4\" (padrão de câmera e suporte de celular).",
+ tips:{"Camada":"0,2 mm","Paredes":"4","Preenchimento":"30%","Porca":"1/4\" pressionada no sextavado do topo"},
+ params:[G("Tripé"),R("alt","Altura",90,40,200,1,"mm"),R("aber","Abertura dos pés",110,60,220,1,"mm"),R("diam","Diâmetro da coluna",18,14,30,1,"mm")],
+ async build(p){const R0=p.diam/2,H=p.alt,feet=[];
+  for(let k=0;k<3;k++){const a=k*Math.PI*2/3,len=p.aber/2;feet.push(rotZ(shift(sk(len,10,g=>rrect(g,0,0,len,10,5),0,6),0,-5,0),a))}
+  const col=revolve(H-10,Math.ceil(H/2),72,z=>z<8?R0+4-(z/8)*4:R0);
+  const D=2*(R0+3),top1=shift(sk(D,D,g=>{circle(g,D/2,D/2,R0+3);holeC(g,D/2,D/2,3.4)},H-10.01,H-6),-D/2,-D/2,0),top2=shift(sk(D,D,g=>{circle(g,D/2,D/2,R0+3);cut(g,gg=>poly(gg,hexPts(D/2,D/2,11.3)))},H-6.01,H),-D/2,-D/2,0);
+  return [P1("tripé",concat(...feet,col,top1,top2))]}},
+{id:"suporte-celular-tripe",name:"Adaptador de celular para tripé",kind:"modelo",cats:["suportes"],rank:48,added:64,tags:["novo"],
+ desc:"Garra para celular com encaixe de porca de 1/4\" embaixo: serve em qualquer tripé ou pau de selfie. Ajuste a largura do aparelho.",
+ tips:{"Camada":"0,2 mm","Paredes":"4","Orientação":"Como na tela","Porca":"1/4\" pressionada no sextavado de baixo"},
+ params:[G("Celular"),R("lw","Largura do celular (com capa)",76,60,95,1,"mm"),R("le","Espessura do celular",10,6,16,.5,"mm"),R("larg","Largura da garra",24,18,40,1,"mm")],
+ async build(p){const W=p.lw+12,H=p.le+20,t=5,B=10;
+  const prof=g=>{g.fillRect(0,H-12,W,12);g.fillRect(0,0,t,H);g.fillRect(W-t,0,t,H);g.fillRect(0,0,t+3.5,4);g.fillRect(W-t-3.5,0,t+3.5,4);cut(g,gg=>gg.fillRect(t,4,W-2*t,H-16+.01))};
+  const body=shift(skUp(W,H,prof,0,p.larg),0,0,B);
+  const L=p.larg,m1=sk(W,L,g=>{g.fillRect(0,0,W,L);cut(g,gg=>poly(gg,hexPts(W/2,L/2,11.3)))},0,6),m2=sk(W,L,g=>{g.fillRect(0,0,W,L);holeC(g,W/2,L/2,3.4)},5.99,B+.01);
+  return [P1("garra",concat(body,m1,m2))]}},
+{id:"bandeja-cabos",name:"Calha de cabos para mesa",kind:"modelo",cats:["mesa","organizacao"],rank:49,added:65,tags:["novo"],
+ desc:"Calha em U para fixar embaixo da mesa e esconder fios e filtro de linha. Abas com furos para parafuso.",
+ tips:{"Camada":"0,2 mm","Orientação":"De boca para cima","Suporte":"Não precisa","Fixação":"Parafuso 3,5 mm ou fita dupla face"},
+ params:[G("Calha"),R("comp","Comprimento",200,80,250,5,"mm"),R("larg","Largura interna",60,30,120,1,"mm"),R("alt","Altura",45,20,80,1,"mm"),R("par","Parede",2,1.2,4,.2,"mm")],
+ async build(p){const L=p.comp,w=p.larg,h=p.alt,t=p.par,tab=14,W=w+2*t+2*tab;
+  const floor=sk(W,L,g=>{g.fillRect(tab,0,w+2*t,L)},0,t);
+  const walls=concat(boxZ(tab,0,0,tab+t,L,h),boxZ(tab+t+w,0,0,tab+2*t+w,L,h));
+  const tabs=sk(W,L,g=>{g.fillRect(0,0,tab+t,L);g.fillRect(W-tab-t,0,tab+t,L);for(let y=20;y<L-10;y+=Math.max(40,(L-40)/3)){holeC(g,tab/2,y,2);holeC(g,W-tab/2,y,2)}holeC(g,tab/2,L-20,2);holeC(g,W-tab/2,L-20,2)},h-t,h);
+  return [P1("calha",concat(floor,walls,tabs))]}},
+{id:"clip-cabo",name:"Clipe de cabo",kind:"modelo",cats:["mesa","organizacao","parede"],rank:50,added:66,tags:["novo"],
+ desc:"Clipe para prender cabos na mesa ou parede com fita dupla face. Ajuste o diâmetro e quantos cabos.",
+ tips:{"Camada":"0,16 mm","Material":"PETG flexiona melhor","Orientação":"Deitado","Fixação":"Fita dupla face 3M"},
+ params:[G("Clipe"),R("dc","Diâmetro do cabo",6,2,15,.5,"mm"),R("n","Quantidade de cabos",1,1,6,1),R("larg","Largura",10,6,20,1,"mm")],
+ async build(p){const r=p.dc/2,t=1.6,n=p.n,pitch=p.dc+3,W=n*pitch+6,H=p.dc+t*2+2.2;
+  const prof=g=>{g.fillRect(0,H-2.2,W,2.2);for(let i=0;i<n;i++){const cx=3+pitch*(i+.5),cy=H-2.2-r;g.beginPath();g.arc(cx,cy,r+t,0,7);g.fill();cut(g,gg=>{circle(gg,cx,cy,r);gg.fillRect(cx-r*.55,0,r*1.1,cy)})}};
+  return [P1("clipe",skUp(W,H,prof,0,p.larg))]}},
+{id:"gancho-porta",name:"Gancho de porta",kind:"modelo",cats:["parede","organizacao"],rank:51,added:67,tags:["novo"],
+ desc:"Gancho que encaixa no topo da porta, sem furar. Informe a espessura da porta e quantos ganchos.",
+ tips:{"Camada":"0,2 mm","Orientação":"Deitado de lado","Paredes":"4","Material":"PETG para peso maior"},
+ params:[G("Gancho"),R("porta","Espessura da porta",35,25,50,1,"mm"),R("queda","Comprimento",90,50,180,1,"mm"),R("n","Ganchos",1,1,2,1),R("larg","Largura",20,12,40,1,"mm"),R("esp","Espessura",4,3,7,.5,"mm")],
+ async build(p){const t=p.esp,D=p.porta,L=p.queda,W=D+2*t+30,H=L+30;
+  const pts=[[t/2,40],[t/2,t/2],[D+t*1.5,t/2],[D+t*1.5,L],[D+t*1.5+14,L+12],[D+t*1.5+24,L-4]];
+  const prof=g=>{strokePath(g,pts.map(([x,y])=>[x+2,y+2]),t);if(p.n>1)strokePath(g,[[D+t*1.5+2,L*.5],[D+t*1.5+16,L*.5+12],[D+t*1.5+26,L*.5-4]].map(([x,y])=>[x,y]),t)};
+  return [P1("gancho",skUp(W,H,prof,0,p.larg))]}},
+{id:"vaso-parede",name:"Vaso de parede",kind:"modelo",cats:["vasos","parede","jardim"],rank:52,added:68,tags:["novo"],
+ desc:"Meio vaso de costas retas para pendurar na parede, com furo de fechadura na traseira. Para suculentas e flores secas.",
+ tips:{"Camada":"0,2 mm","Paredes":"2","Suporte":"Não precisa","Pendurar":"Prego ou parafuso no furo de trás"},
+ params:[G("Vaso"),R("larg","Largura",90,50,180,1,"mm"),R("prof","Profundidade",50,25,90,1,"mm"),R("alt","Altura",110,50,200,1,"mm"),R("par","Parede",1.8,1,4,.2,"mm"),SEG("forma","Formato","oval",[["oval","Oval"],["reto","Reto"],["facetado","Facetado"]])],
+ async build(p){const W=p.larg,D=p.prof,H=p.alt,t=p.par;
+  const out=(g,o)=>{if(p.forma==="reto")rrect(g,o,-10,W-2*o,D+10-o,Math.max(0,6-o));else if(p.forma==="facetado")poly(g,[[o,0],[W-o,0],[W-o,D*.55],[W*.72-o*.4,D-o],[W*.28+o*.4,D-o],[o,D*.55]]);else{g.beginPath();g.ellipse(W/2,0,W/2-o,D-o,0,0,Math.PI);g.fill()}};
+  const floor=sk(W,D,g=>out(g,0),0,2);
+  const wall=sk(W,D,g=>{out(g,0);cut(g,gg=>out(gg,t))},1.99,H);
+  const back=skUp(W,H+15,g=>{g.fillRect(0,0,W,H+15);cut(g,gg=>{circle(gg,W/2,10,4);gg.fillRect(W/2-1.8,10,3.6,7)})},D-t,t);
+  return [P1("vaso",concat(floor,wall,back))]}},
+{id:"ciclone",name:"Separador de pó ciclone",kind:"modelo",cats:["mecanica","organizacao"],rank:53,added:69,tags:["novo"],
+ desc:"Ciclone para aspirador: separa serragem e pó antes do filtro. Ajuste o diâmetro das mangueiras e o tamanho do cone.",
+ tips:{"Camada":"0,2 mm","Paredes":"3","Suporte":"Na entrada lateral","Vedação":"Fita veda-rosca nas emendas"},
+ params:[G("Ciclone"),R("dc","Diâmetro do corpo",110,80,180,1,"mm"),R("hc","Altura do corpo",70,50,120,1,"mm"),R("hk","Altura do cone",110,60,220,1,"mm"),R("dm","Diâmetro das mangueiras",36,25,50,1,"mm"),R("db","Saída de baixo",40,25,80,1,"mm"),R("par","Parede",2.4,1.6,4,.2,"mm")],
+ async build(p){const R0=p.dc/2,rb=Math.min(p.db/2,R0-5),t=p.par,rm=Math.min(p.dm/2,p.hc/2-4),Hk=p.hk,Hc=p.hc,H=Hk+Hc,Dw=2*(R0+t),C=R0+t;
+  const cone=revolve(Hk,Math.ceil(Hk/1.5),96,z=>rb+t+(R0-rb)*z/Hk,z=>rb+(R0-rb)*z/Hk);
+  const zc=H-2*rm-t-3,ann=(z0,z1,gap)=>shift(sk(Dw,Dw,g=>{circle(g,C,C,R0+t);cut(g,gg=>{circle(gg,C,C,R0);if(gap)gg.fillRect(C,-1,C+1,t+2*rm+1)})},z0,z1),-C,-C,0);
+  const body=concat(ann(Hk-.01,zc),ann(zc-.01,zc+2*rm,true),ann(zc+2*rm-.01,H));
+  const x0=Math.sqrt(Math.max(0,R0*R0-(R0-2*rm)*(R0-2*rm)))-1,X1=R0+30;
+  const duct=concat(boxZ(x0,R0-2*rm-t,zc-t,X1,R0+t,zc),boxZ(x0,R0-2*rm-t,zc+2*rm,X1,R0+t,zc+2*rm+t),boxZ(0,R0,zc-t,X1,R0+t,zc+2*rm+t),boxZ(x0,R0-2*rm-t,zc-t,X1,R0-2*rm,zc+2*rm+t));
+  const S=2*rm+2*t,plate=shift(rotYa(sk(S,S,g=>{g.fillRect(0,0,S,S);holeC(g,S/2,S/2,rm)},0,t),Math.PI/2),X1,R0-2*rm-t,zc-t+S);
+  const hose=shift(rotYa(tubeZ(0,0,rm+t,rm,0,25,48),Math.PI/2),X1+t-.01,R0-rm,zc+rm);
+  const lid=tubeZ(0,0,R0+t,rm+t*.5,H-.01,H+t,96),out=tubeZ(0,0,rm+t,rm,H-Hc*.55,H+25,72);
+  return [P1("ciclone",concat(cone,body,duct,plate,hose,lid,out))]}},
+{id:"conector-sarrafo",name:"Conector de sarrafo quadrado",kind:"modelo",cats:["mecanica","organizacao"],rank:54,added:70,tags:["novo"],
+ desc:"Conector para montar estruturas com sarrafo ou cabo de vassoura quadrado: emenda, L, T, cruz, canto 3D e 5 vias.",
+ tips:{"Camada":"0,2 mm","Paredes":"4","Folga":"Some 0,3 mm à medida do sarrafo","Preenchimento":"30%"},
+ params:[G("Encaixe"),SEG("tipo","Tipo","canto",SARRAFO_TIPOS),R("lado","Lado do sarrafo (+folga)",20.3,8,50,.1,"mm"),R("enc","Profundidade do encaixe",22,10,50,1,"mm"),R("parede","Parede",2.6,1.6,5,.2,"mm")],
+ async build(p){return sarrafoParts(p,p.lado,p.lado)}},
+{id:"conector-sarrafo-ret",name:"Conector de sarrafo retangular",kind:"modelo",cats:["mecanica","organizacao"],rank:55,added:71,tags:["novo"],
+ desc:"O mesmo conector para ripas retangulares, como 2×4 cm ou 1×5 cm. Informe as duas medidas da ripa.",
+ tips:{"Camada":"0,2 mm","Paredes":"4","Folga":"Some 0,3 mm a cada medida","Preenchimento":"30%"},
+ params:[G("Encaixe"),SEG("tipo","Tipo","L",SARRAFO_TIPOS),R("la","Largura da ripa (+folga)",40.3,8,80,.1,"mm"),R("lb","Espessura da ripa (+folga)",20.3,5,50,.1,"mm"),R("enc","Profundidade do encaixe",25,10,50,1,"mm"),R("parede","Parede",2.6,1.6,5,.2,"mm")],
+ async build(p){return sarrafoParts(p,p.la,p.lb)}},
+{id:"bandeja-vazada",name:"Bandeja vazada",kind:"modelo",cats:["organizacao","cozinha"],rank:56,added:72,tags:["novo"],
+ desc:"Bandeja com fundo vazado em colmeia, círculos ou ripas. Para escorrer, secar e organizar.",
+ tips:{"Camada":"0,2 mm","Paredes":"2","Suporte":"Não precisa","Material":"PETG para cozinha"},
+ params:[G("Bandeja"),R("larg","Largura",160,60,250,1,"mm"),R("prof","Profundidade",110,40,250,1,"mm"),R("alt","Altura",25,8,80,1,"mm"),R("raio","Raio dos cantos",8,0,30,1,"mm"),G("Fundo"),SEG("pad","Padrão","colmeia",[["colmeia","Colmeia"],["circulos","Círculos"],["ripas","Ripas"]]),R("furo","Tamanho do furo",10,4,25,1,"mm")],
+ async build(p){const W=p.larg,D=p.prof,f=p.furo,m=6;
+  const floor=sk(W,D,g=>{rrect(g,0,0,W,D,p.raio);cut(g,gg=>{gg.save();gg.beginPath();gg.rect(m,m,W-2*m,D-2*m);gg.clip();
+    if(p.pad==="ripas"){for(let x=m+f*.4;x<W-m;x+=f*1.6)gg.fillRect(x,m,f*.8,D-2*m)}
+    else if(p.pad==="circulos"){for(let y=m+f/2;y<D-m;y+=f*1.35)for(let x=m+f/2;x<W-m;x+=f*1.35)circle(gg,x,y,f/2)}
+    else{const dx=f*1.25,dy=dx*Math.sqrt(3)/2;let r=0;for(let y=m;y<D;y+=dy,r++)for(let x=m+(r%2?dx/2:0);x<W;x+=dx)poly(gg,hexPts(x,y,f))}gg.restore()})},0,2);
+  const wall=sk(W,D,g=>{rrect(g,0,0,W,D,p.raio);cut(g,gg=>rrect(gg,2,2,W-4,D-4,Math.max(0,p.raio-2)))},1.99,p.alt);
+  return [P1("bandeja",concat(floor,wall))]}},
+{id:"chaveiro-apoio",name:"Chaveiro apoio de celular",kind:"modelo",cats:["chaveiros","suportes","personalizados"],rank:57,added:73,tags:["novo"],
+ desc:"Chaveiro que vira apoio de celular: fica em pé de lado e segura o aparelho na mesa. Com nome gravado.",
+ tips:{"Camada":"0,16 mm","Orientação":"Deitado","Uso":"Fica em pé sobre a lateral","Material":"PETG ou PLA"},
+ params:[G("Apoio"),R("le","Espessura do celular (com capa)",11,7,16,.5,"mm"),R("ang","Inclinação",65,50,80,1,"°"),R("esp","Espessura do chaveiro",5,4,8,.5,"mm"),T("nome","Nome","Ana",{max:10}),FSEL("font","Fonte","heavy")],
+ async build(p){const a=p.ang*Math.PI/180,s=p.le,L=72,bh=12,ca=Math.cos(a),sa=Math.sin(a),Hc=bh+30*sa+4,Y=y=>Hc-y,m=await fitText(p.font,7,p.nome||" ",40);
+  const shape=g=>{rrect(g,0,Y(bh),L,bh,3);rrect(g,3,Y(bh+8),7,8.01,2);const x1=10+s;poly(g,[[x1,Y(bh-.5)],[x1+6,Y(bh-.5)],[x1+6+30*ca,Y(bh+30*sa)],[x1+30*ca,Y(bh+30*sa)]]);circle(g,L-6,Y(bh/2),6);holeC(g,L-6,Y(bh/2),2.5)};
+  const base=sk(L,Hc,shape,0,p.esp-.6),top=sk(L,Hc,g=>{shape(g);cut(g,textAt(m,p.nome||" ",(L-12)/2+2,Y(bh/2)))},p.esp-.61,p.esp);
+  return [P1("chaveiro",concat(base,top))]}},
+{id:"ponteira-pe",name:"Ponteira para pé de móvel",kind:"modelo",cats:["mecanica","organizacao"],rank:58,added:74,tags:["novo"],
+ desc:"Capa para pé de cadeira e mesa, redonda ou quadrada, protege o piso e evita barulho.",
+ tips:{"Camada":"0,16 mm","Material":"TPU é o ideal","Folga":"Meça o pé e some 0,2 mm","Paredes":"3"},
+ params:[G("Pé"),SEG("forma","Formato","redondo",[["redondo","Redondo"],["quadrado","Quadrado"]]),R("med","Diâmetro ou lado do pé",22,8,60,.1,"mm"),R("alt","Altura",15,6,40,1,"mm"),R("par","Parede",2,1.2,4,.2,"mm"),R("fundo","Fundo",3,1.5,8,.5,"mm")],
+ async build(p){const r=p.med/2,t=p.par,h=p.alt,b=p.fundo;
+  if(p.forma==="redondo")return [P1("ponteira",revolve(h,Math.ceil(h/.4),96,z=>r+t+(z<1?(1-z)*-.6:0),()=>r,b))];
+  const S=p.med+2*t;return [P1("ponteira",concat(sk(S,S,g=>rrect(g,0,0,S,S,2),0,b),sk(S,S,g=>{rrect(g,0,0,S,S,2);cut(g,gg=>gg.fillRect(t,t,p.med,p.med))},b-.01,h)))]}},
+{id:"porta-capsulas",name:"Porta-cápsulas de café",kind:"modelo",cats:["cozinha","organizacao"],rank:59,added:75,tags:["novo"],
+ desc:"Base com nichos para cápsulas de café (Dolce Gusto, Nespresso ou medida livre). Organiza a bancada.",
+ tips:{"Camada":"0,2 mm","Preenchimento":"10%","Suporte":"Não precisa","Medida":"Confira o diâmetro da sua cápsula"},
+ params:[G("Cápsula"),S("tipo","Cápsula","dg",[["dg","Dolce Gusto (53 mm)"],["nes","Nespresso (37 mm)"],["livre","Medida livre"]]),R("dl","Diâmetro (medida livre)",45,25,70,.5,"mm",{show:p=>p.tipo==="livre"}),G("Grade"),R("cols","Colunas",4,1,8,1),R("lins","Linhas",3,1,8,1)],
+ async build(p){const d=(p.tipo==="dg"?53:p.tipo==="nes"?37.5:p.dl)+1.2,pt=d+4,W=p.cols*pt+4,D=p.lins*pt+4;
+  const base=sk(W,D,g=>rrect(g,0,0,W,D,6),0,2),top=sk(W,D,g=>{rrect(g,0,0,W,D,6);cut(g,gg=>{for(let r=0;r<p.lins;r++)for(let c=0;c<p.cols;c++)circle(gg,2+pt*(c+.5),2+pt*(r+.5),d/2)})},1.99,12);
+  return [P1("porta-cápsulas",concat(base,top))]}},
+{id:"porta-escova",name:"Porta-escovas de dente",kind:"modelo",cats:["organizacao"],rank:60,added:76,tags:["novo"],
+ desc:"Copo com tampa de furos para escovas e creme dental, com drenos no fundo para não acumular água.",
+ tips:{"Camada":"0,2 mm","Material":"PETG","Paredes":"3","Limpeza":"Lavar à mão"},
+ params:[G("Porta-escovas"),R("diam","Diâmetro",75,50,120,1,"mm"),R("alt","Altura",95,50,150,1,"mm"),R("esc","Furos para escova",4,1,8,1),C("creme","Furo para creme dental",true)],
+ async build(p){const R0=p.diam/2,H=p.alt;
+  const cup=revolve(H,Math.ceil(H/2),96,z=>R0-(z<2?2-z:0)*.5,()=>R0-2,3);
+  const lid=sk(p.diam,p.diam,g=>{circle(g,R0,R0,R0);cut(g,gg=>{const n=p.esc,rr=R0*.55;for(let i=0;i<n;i++){const a=i/n*Math.PI*2;circle(gg,R0+rr*Math.cos(a),R0+rr*Math.sin(a),6)}if(p.creme)circle(gg,R0,R0,Math.min(R0*.3,14))})},0,3);
+  const lip=sk(p.diam,p.diam,g=>{circle(g,R0,R0,R0-2.3);cut(g,gg=>circle(gg,R0,R0,R0-4.3))},2.99,8);
+  return [P1("copo",cup),P1("tampa",shift(concat(lid,lip),R0+8,-R0,0))]}},
+{id:"porta-coleira",name:"Porta-coleira de parede",kind:"modelo",cats:["pets","parede","personalizados"],rank:61,added:77,tags:["novo","duas cores"],
+ desc:"Painel de parede com o nome do pet e ganchos para coleira, guia e saquinhos.",
+ tips:{"Camada":"0,2 mm","Troca de cor":"Na camada do nome","Fixação":"2 parafusos com bucha","Suporte":"Não precisa"},
+ params:[G("Painel"),T("nome","Nome","Thor",{max:12}),FSEL("font","Fonte","round"),R("larg","Largura",160,90,250,5,"mm"),R("n","Ganchos",3,1,6,1),R("rel","Relevo",1.2,.6,3,.2,"mm"),DUAS],
+ async build(p){const W=p.larg,H=70,t=5,m=await fitText(p.font,26,p.nome||" ",W-30);
+  const plate=sk(W,H,g=>{rrect(g,0,0,W,H,10);holeC(g,8,H/2,2.2);holeC(g,W-8,H/2,2.2)},0,t);
+  const txt=sk(W,H,textAt(m,p.nome||" ",W/2,H*.38),t,t+p.rel);
+  const hooks=[];for(let i=0;i<p.n;i++){const x=20+(W-40)*(p.n===1?.5:i/(p.n-1)),y=12;hooks.push(cylZ(x,y,3.5,t-.1,t+24),cylZ(x,y,6,t+20,t+24))}
+  const body=concat(plate,...hooks);return p.duas?[P1("painel",body),P1("nome",txt,1)]:[P1("painel",concat(body,txt))]}},
+{id:"protetor-quina",name:"Protetor de quina",kind:"modelo",cats:["organizacao"],rank:62,added:78,tags:["novo"],
+ desc:"Cantoneira macia para quina de mesa e móvel. Protege criança e pet de batidas.",
+ tips:{"Material":"TPU","Camada":"0,2 mm","Fixação":"Fita dupla face","Orientação":"Como na tela"},
+ params:[G("Protetor"),R("tampo","Espessura do tampo",25,10,50,1,"mm"),R("aba","Comprimento das abas",30,15,60,1,"mm"),R("esp","Espessura",4,2,8,.5,"mm")],
+ async build(p){const T0=p.tampo,a=p.aba,t=p.esp;
+  const top=sk(a+t,a+t,g=>{g.beginPath();g.moveTo(0,0);g.lineTo(a+t,0);g.lineTo(a+t,t+4);g.lineTo(t+4,t+4);g.lineTo(t+4,a+t);g.lineTo(0,a+t);g.closePath();g.fill();},0,t);
+  const s1=boxZ(0,0,0,a+t,t,T0+2*t),s2=boxZ(0,0,0,t,a+t,T0+2*t),bot=shift(sk(a+t,a+t,g=>poly(g,[[0,0],[a+t,0],[a+t,t+4],[t+4,t+4],[t+4,a+t],[0,a+t]]),0,t),0,0,T0+t);
+  return [P1("protetor",concat(top,s1,s2,bot))]}},
+{id:"prendedor-varal",name:"Prendedor de roupa",kind:"modelo",cats:["organizacao"],rank:63,added:79,tags:["novo"],
+ desc:"Prendedor de peça única, sem mola, que segura pela flexão do material. Imprime vários de uma vez.",
+ tips:{"Material":"PETG ou PP","Camada":"0,2 mm","Paredes":"Todas","Dica":"Teste a pressão e ajuste a espessura"},
+ params:[G("Prendedor"),R("comp","Comprimento",60,40,90,1,"mm"),R("larg","Largura",10,6,16,1,"mm"),R("esp","Espessura da mola",2.2,1.4,3.5,.1,"mm"),R("qtd","Quantidade",4,1,12,1)],
+ async build(p){const L=p.comp,t=p.esp,H=24;
+  const prof=g=>{strokePath(g,[[L-8,H/2-1.5],[14,H/2-1.5],[6,H/2-7],[4,H/2],[6,H/2+7],[14,H/2+1.5],[L-8,H/2+1.5]],t);strokePath(g,[[L-4,H/2-4],[L-12,H/2-1.2]],t);strokePath(g,[[L-4,H/2+4],[L-12,H/2+1.2]],t)};
+  const one=sk(L,H,prof,0,p.larg),out=[];for(let i=0;i<p.qtd;i++)out.push(shift(new Float32Array(one),0,i*(H+3),0));
+  return [P1("prendedores",concat(...out))]}},
+{id:"sapateira",name:"Sapateira modular",kind:"modelo",cats:["organizacao"],rank:64,added:80,tags:["novo"],
+ desc:"Prateleira para um par de sapatos que empilha e encaixa com as outras. Monte a altura que quiser.",
+ tips:{"Camada":"0,24 mm","Preenchimento":"15%","Suporte":"Não precisa","Montagem":"Pinos de cima entram nos furos de baixo"},
+ params:[G("Módulo"),R("larg","Largura",220,150,250,5,"mm"),R("prof","Profundidade",170,120,250,5,"mm"),R("alt","Altura",110,70,180,5,"mm"),R("par","Parede",3,2,5,.5,"mm")],
+ async build(p){const W=p.larg,D=p.prof,H=p.alt,t=p.par;
+  const floor=sk(W,D,g=>{g.fillRect(0,0,W,D);cut(g,gg=>{for(let x=20;x<W-20;x+=22)gg.fillRect(x,18,10,D-36)})},0,t);
+  const sides=concat(boxZ(0,0,0,t*2,D,H),boxZ(W-t*2,0,0,W,D,H),boxZ(0,D-t,0,W,D,24));
+  const pegs=[[t,15],[t,D-15],[W-t,15],[W-t,D-15]].map(([x,y])=>cylZ(x,y,3,H-.1,H+8));
+  return [P1("módulo",concat(floor,sides,...pegs))]}},
+{id:"amplificador-celular",name:"Amplificador de som para celular",kind:"modelo",cats:["mesa","suportes"],rank:65,added:81,tags:["novo"],
+ desc:"Apoio que direciona o som do alto-falante do celular por canais internos e aumenta o volume, sem energia.",
+ tips:{"Camada":"0,2 mm","Preenchimento":"20%","Suporte":"Não precisa","Uso":"Alto-falante virado para baixo"},
+ params:[G("Amplificador"),R("le","Espessura do celular",11,7,16,.5,"mm"),R("larg","Largura do celular",76,60,95,1,"mm"),R("comp","Comprimento",160,110,220,5,"mm")],
+ async build(p){const L=p.comp,D=p.larg*.7,s=p.le;
+  const floor=sk(L,D,g=>rrect(g,0,0,L,D,10),0,2.5);
+  const mid=sk(L,D,g=>{rrect(g,0,0,L,D,10);cut(g,gg=>{poly(gg,[[L/2-8,D/2-6],[6,D/2-D*.35],[6,D/2+D*.35],[L/2-8,D/2+6]]);poly(gg,[[L/2+8,D/2-6],[L-6,D/2-D*.35],[L-6,D/2+D*.35],[L/2+8,D/2+6]]);gg.fillRect(L/2-10,D/2-6,20,12)})},2.49,22);
+  const top=sk(L,D,g=>{rrect(g,0,0,L,D,10);cut(g,gg=>gg.fillRect(L/2-s/2,D/2-p.larg*.5,s,p.larg))},21.99,38);
+  return [P1("amplificador",concat(floor,mid,top))]}},
+{id:"dosador-racao",name:"Dosador de ração",kind:"modelo",cats:["pets","cozinha"],rank:66,added:82,tags:["novo"],
+ desc:"Medidor com o volume exato que você define (ml ou gramas de ração) e cabo para pegar no pacote.",
+ tips:{"Camada":"0,2 mm","Paredes":"3","Material":"PETG","Conversão":"Ração seca: cerca de 0,4 g por ml"},
+ params:[G("Dosador"),SEG("un","Medida","g",[["g","Gramas de ração"],["ml","Mililitros"]]),R("qtd","Quantidade",100,10,500,5),R("cabo","Comprimento do cabo",80,30,140,1,"mm")],
+ async build(p){const ml=p.un==="g"?p.qtd/.4:p.qtd,V=ml*1000,r=Math.cbrt(V/(Math.PI*1.1)),h=r*1.1,t=2;
+  const cup=revolve(h+t,Math.ceil(h/2),96,()=>r+t,()=>r,t),hd=boxZ(r,-7,0,r+t+p.cabo,7,5);
+  return [P1("dosador",concat(cup,hd))]}},
+{id:"caixa-dobravel",name:"Caixa dobrável",kind:"modelo",cats:["organizacao","negocio"],rank:67,added:83,tags:["novo"],
+ desc:"Caixa impressa plana com dobras finas: dobre as laterais e ela fica montada. Ótima para embalagem e presente.",
+ tips:{"Material":"PETG ou PP (dobra sem quebrar)","Camada":"0,2 mm","Dobra":"Dobre devagar logo após imprimir","Fecho":"Abas se encaixam nos cantos"},
+ params:[G("Caixa"),R("larg","Largura",80,30,150,1,"mm"),R("prof","Profundidade",60,30,150,1,"mm"),R("alt","Altura",40,15,100,1,"mm"),R("esp","Espessura",1.2,.8,2,.1,"mm")],
+ async build(p){const w=p.larg,d=p.prof,h=p.alt,W=w+2*h,D=d+2*h,g0=.8;
+  const net=g=>{g.fillRect(h,0,w,D);g.fillRect(0,h,W,d)};
+  const thin=sk(W,D,net,0,.4),thick=sk(W,D,g=>{net(g);cut(g,gg=>{gg.fillRect(h-g0/2,h,g0,d);gg.fillRect(h+w-g0/2,h,g0,d);gg.fillRect(h,h-g0/2,w,g0);gg.fillRect(h,h+d-g0/2,w,g0)})},.39,p.esp);
+  return [P1("caixa",concat(thin,thick))]}},
+{id:"puxador-barra",name:"Puxador de barra",kind:"modelo",cats:["organizacao","parede"],rank:68,added:84,tags:["novo"],
+ desc:"Puxador de armário em barra com dois pés e furos para parafuso na distância de furação que você precisar.",
+ tips:{"Orientação":"De cabeça para baixo, como na tela","Camada":"0,16 mm","Paredes":"4","Parafuso":"M4 ou parafuso para madeira"},
+ params:[G("Puxador"),R("dist","Distância entre furos",96,32,320,1,"mm"),R("alt","Altura (afastamento)",30,18,50,1,"mm"),R("larg","Espessura da barra",12,8,20,1,"mm"),R("furo","Furo",3.4,2.5,5,.1,"mm")],
+ async build(p){const L=p.dist+p.larg+16,w=p.larg,h=p.alt;
+  const bar=sk(L,w,g=>rrect(g,0,0,L,w,w/2),0,w*.6);
+  const legs=[8+w/2,L-8-w/2].map(x=>shift(revolve(h-w*.6+.1,8,64,z=>w/2-.2,()=>p.furo/2,Math.max(1,h-w*.6-12)),x,w/2,w*.6-.1));
+  return [P1("puxador",concat(bar,...legs))]}},
+{id:"suporte-tubo",name:"Suporte de cabideiro (tubo)",kind:"modelo",cats:["organizacao","parede","suportes"],rank:69,added:85,tags:["novo"],
+ desc:"Suporte de parede lateral para tubo de cabideiro de armário, aberto (encaixa por cima) ou fechado.",
+ tips:{"Camada":"0,2 mm","Paredes":"4","Preenchimento":"40%","Fixação":"3 parafusos com bucha"},
+ params:[G("Suporte"),R("dt","Diâmetro do tubo",25,12,40,.5,"mm"),SEG("tipo","Tipo","aberto",[["aberto","Aberto"],["fechado","Fechado"]]),R("esp","Espessura",5,3,8,.5,"mm")],
+ async build(p){const r=p.dt/2+.3,t=p.esp,D=p.dt+30;
+  const plate=sk(D,D,g=>{circle(g,D/2,D/2,D/2);cut(g,gg=>{for(let k=0;k<3;k++){const a=-Math.PI/2+k*Math.PI*2/3+Math.PI/3;circle(gg,D/2+(D/2-6)*Math.cos(a),D/2+(D/2-6)*Math.sin(a),2.2)}})},0,t);
+  const cup=sk(D,D,g=>{circle(g,D/2,D/2,r+3);cut(g,gg=>{circle(gg,D/2,D/2,r);if(p.tipo==="aberto")gg.fillRect(D/2-r,0,2*r,D/2)})},t-.01,t+r+3);
+  return [P1("suporte",concat(plate,cup))]}},
+{id:"suporte-tacas",name:"Suporte de taças",kind:"modelo",cats:["cozinha","organizacao"],rank:70,added:86,tags:["novo"],
+ desc:"Trilho para pendurar taças de cabeça para baixo embaixo do armário. Encaixa a base da taça no canal.",
+ tips:{"Orientação":"Plano para baixo, como na tela","Camada":"0,2 mm","Paredes":"4","Fixação":"Parafusos nos furos"},
+ params:[G("Trilho"),R("comp","Comprimento",200,80,250,5,"mm"),R("pe","Diâmetro do pé da taça (folga)",8,5,14,.5,"mm"),R("vao","Altura do canal",8,5,15,.5,"mm")],
+ async build(p){const L=p.comp,c=p.pe,h=p.vao,f=8,t=3,W=c+2*f+2*t;
+  const top=sk(W,L,g=>{g.fillRect(0,0,W,L);for(let y=15;y<L;y+=Math.max(50,(L-30)/3))holeC(g,W/2,y,2.1);holeC(g,W/2,L-15,2.1)},0,t);
+  const walls=concat(boxZ(f,0,t-.01,f+t,L,t+h),boxZ(W-f-t,0,t-.01,W-f,L,t+h));
+  const lips=concat(boxZ(0,0,t+h-.01,f+t,L,t+h+2.5),boxZ(W-f-t,0,t+h-.01,W,L,t+h+2.5));
+  return [P1("trilho",concat(top,walls,lips))]}},
+{id:"abracadeira-cano",name:"Abraçadeira de cano",kind:"modelo",cats:["mecanica","parede"],rank:71,added:87,tags:["novo"],
+ desc:"Abraçadeira em U para fixar cano, conduíte ou mangueira na parede, com abas e furos para parafuso.",
+ tips:{"Camada":"0,2 mm","Paredes":"4","Orientação":"Como na tela","Folga":"Já soma 0,5 mm ao diâmetro"},
+ params:[G("Abraçadeira"),R("dc","Diâmetro do cano",25,6,110,.5,"mm"),R("larg","Largura",15,8,30,1,"mm"),R("esp","Espessura",3,2,6,.5,"mm")],
+ async build(p){const r=p.dc/2+.25,t=p.esp,W=2*r+2*t+24,H=r+t,L=p.larg;
+  const arch=skUp(W,H,g=>{g.beginPath();g.arc(W/2,H,r+t,Math.PI,0);g.fill();cut(g,gg=>{gg.beginPath();gg.arc(W/2,H,r,Math.PI,0);gg.fill()})},0,L);
+  const tabs=sk(W,L,g=>{g.fillRect(0,0,W/2-r,L);g.fillRect(W/2+r,0,W/2-r,L);holeC(g,6,L/2,2);holeC(g,W-6,L/2,2)},0,t);
+  return [P1("abraçadeira",concat(arch,tabs))]}},
+{id:"comedouro-passaro",name:"Comedouro de pássaro",kind:"modelo",cats:["jardim","pets"],rank:72,added:88,tags:["novo"],
+ desc:"Comedouro com reservatório de sementes, bandeja com borda e tampa separada. Apoie no muro ou pendure num cesto de corda.",
+ tips:{"Camada":"0,2 mm","Material":"PETG ou ASA (sol)","Paredes":"3","Abastecer":"Tire a tampa e encha pelo topo"},
+ params:[G("Comedouro"),R("dr","Diâmetro do reservatório",60,40,100,1,"mm"),R("alt","Altura do reservatório",110,60,200,1,"mm"),R("db","Diâmetro da bandeja",120,80,180,1,"mm")],
+ async build(p){const rr=p.dr/2,H=p.alt,rb=Math.max(p.db/2,rr+15),t=2;
+  const tray=revolve(10,4,96,()=>rb,()=>rb-t,2);
+  const tube=shift(sk(p.dr,p.dr,g=>{circle(g,rr,rr,rr);cut(g,gg=>{circle(gg,rr,rr,rr-t);gg.fillRect(0,rr-7,p.dr,14)})},1.99,16),-rr,-rr,0);
+  const tube2=tubeZ(0,0,rr,rr-t,15.99,H);
+  const lid=concat(cylZ(0,0,rr+3,0,3),tubeZ(0,0,rr-t-.3,rr-t-2.3,2.99,10));
+  return [P1("comedouro",concat(tray,tube,tube2)),P1("tampa",shift(lid,rb+rr+10,0,0))]}},
+{id:"casinha-passaro",name:"Casinha de passarinho",kind:"modelo",cats:["jardim","pets"],rank:73,added:89,tags:["novo"],
+ desc:"Casinha com telhado de duas águas, furo de entrada no tamanho certo para a espécie e poleiro.",
+ tips:{"Camada":"0,24 mm","Material":"PETG ou ASA","Furo":"28 a 32 mm para pássaros pequenos","Suporte":"Só no poleiro"},
+ params:[G("Casinha"),R("larg","Largura",110,80,170,1,"mm"),R("alt","Altura da parede",110,80,170,1,"mm"),R("furo","Furo de entrada",30,20,50,1,"mm"),R("par","Parede",2.4,1.6,4,.2,"mm"),C("poleiro","Poleiro",true)],
+ async build(p){const W=p.larg,H=p.alt,t=p.par,rf=W/2,Ht=H+rf,hz=Ht-(rf+H*.3);
+  const pent=g=>poly(g,[[0,Ht],[W,Ht],[W,rf],[W/2,0],[0,rf]]);
+  const front=skUp(W,Ht,g=>{pent(g);holeC(g,W/2,rf+H*.3,p.furo/2)},0,t),back=skUp(W,Ht,pent,W-t,t);
+  const sides=concat(boxZ(0,0,0,t,W,H),boxZ(W-t,0,0,W,W,H),boxZ(0,0,0,W,W,t));
+  const len=rf*Math.SQRT2+8,rR=shift(rotYa(boxZ(-2,-6,0,len,W+6,t+.6),Math.PI/4),W/2,0,Ht-.6),rL=shift(mirrorX(rotYa(boxZ(-2,-6,0,len,W+6,t+.6),Math.PI/4)),W/2,0,Ht-.6);
+  const parts=[front,back,sides,rR,rL];if(p.poleiro)parts.push(shift(rotXa(cylZ(0,0,3,0,28),Math.PI/2),W/2,t,hz-p.furo/2-10));
+  const all=concat(...parts),bb=bbox(all);return [P1("casinha",shift(all,-bb.mn[0],-bb.mn[1],-bb.mn[2]))]}},
+{id:"organizador-bits",name:"Organizador de bits",kind:"modelo",cats:["mecanica","organizacao"],rank:74,added:90,tags:["novo"],
+ desc:"Bloco com furos sextavados para bits de parafusadeira (1/4\"), em quantas linhas e colunas quiser.",
+ tips:{"Camada":"0,2 mm","Paredes":"3","Folga":"Ajuste se os bits ficarem soltos","Preenchimento":"15%"},
+ params:[G("Bloco"),R("cols","Colunas",8,2,20,1),R("lins","Linhas",3,1,8,1),R("folga","Folga do sextavado",.25,0,.6,.05,"mm"),R("prof","Profundidade",14,8,25,1,"mm")],
+ async build(p){const af=6.35+p.folga,pt=10,W=p.cols*pt+6,D=p.lins*pt+6,H=p.prof+2;
+  const base=sk(W,D,g=>rrect(g,0,0,W,D,4),0,2),top=sk(W,D,g=>{rrect(g,0,0,W,D,4);cut(g,gg=>{for(let r=0;r<p.lins;r++)for(let c=0;c<p.cols;c++)poly(gg,hexPts(3+pt*(c+.5),3+pt*(r+.5),af))})},1.99,H);
+  return [P1("organizador",concat(base,top))]}},
+{id:"relogio-parede",name:"Relógio de parede",kind:"modelo",cats:["parede","personalizados","negocio"],rank:75,added:91,tags:["novo","duas cores"],
+ desc:"Mostrador para máquina de relógio de quartzo, com marcações ou números em relevo e o texto que quiser.",
+ tips:{"Peça extra":"Máquina de relógio com eixo de 8 mm","Camada":"0,2 mm","Troca de cor":"Na camada dos números","Dica":"Confira o comprimento do eixo"},
+ params:[G("Mostrador"),R("diam","Diâmetro",200,100,250,5,"mm"),SEG("marc","Marcações","numeros",[["numeros","Números"],["tracos","Traços"],["romanos","Romanos"]]),T("texto","Texto","FDG Maker",{max:20}),FSEL("font","Fonte","display"),R("furo","Furo do eixo",8,6,12,.5,"mm"),DUAS],
+ async build(p){const D=p.diam,R0=D/2,c=R0,rom=["XII","I","II","III","IV","V","VI","VII","VIII","IX","X","XI"];
+  const fs=D*.08,ms=await Promise.all([...Array(12)].map((_,i)=>fitText(p.font,fs,p.marc==="romanos"?rom[i]:String(i||12),fs*2))),mt=p.texto?await fitText(p.font,D*.05,p.texto,D*.5):null;
+  const marks=g=>{for(let i=0;i<12;i++){const a=i*Math.PI/6,x=c+R0*.8*Math.sin(a),y=c-R0*.8*Math.cos(a);if(p.marc==="tracos"){g.save();g.translate(c+R0*.85*Math.sin(a),c-R0*.85*Math.cos(a));g.rotate(a);g.fillRect(-1.5,-(i%3?5:9),3,i%3?10:18);g.restore()}else textAt(ms[i],p.marc==="romanos"?rom[i]:String(i||12),x,y)(g)}
+    if(mt)textAt(mt,p.texto,c,c+R0*.35)(g);g.save();g.lineWidth=3;g.beginPath();g.arc(c,c,R0-3,0,7);g.stroke();g.restore()};
+  return tone(p.duas,D,D,autoRes(D,D,6),[{h:3,draw:g=>{circle(g,c,c,R0);holeC(g,c,c,p.furo/2)}}],3,[{h:1,draw:marks}],["mostrador","números"])}},
+{id:"suporte-notebook",name:"Suporte de notebook",kind:"modelo",cats:["mesa","suportes"],rank:76,added:92,tags:["novo"],
+ desc:"Par de laterais inclinadas com batente que levantam o notebook para melhorar a postura e a ventilação.",
+ tips:{"Camada":"0,2 mm","Preenchimento":"20%","Orientação":"Deitado","Uso":"Uma lateral de cada lado"},
+ params:[G("Suporte"),R("ang","Inclinação",15,5,30,1,"°"),R("prof","Profundidade",220,150,250,5,"mm"),R("alt","Altura na frente",20,10,50,1,"mm"),R("esp","Espessura",14,8,25,1,"mm")],
+ async build(p){const L=p.prof,ta=Math.tan(p.ang*Math.PI/180),h0=p.alt,h1=h0+(L-6)*ta,Hc=Math.max(h1,h0+10)+1,Y=z=>Hc-z;
+  const prof=g=>{poly(g,[[0,Y(0)],[L,Y(0)],[L,Y(h1)],[6,Y(h0)],[6,Y(h0+10)],[0,Y(h0+10)]]);cut(g,gg=>{gg.beginPath();gg.ellipse(L*.55,Y(0),L*.3,Math.min(h0*.75,(h0+L*.25*ta)*.7),0,0,7);gg.fill()})};
+  const one=sk(L,Hc,prof,0,p.esp);return [P1("lateral",one),P1("lateral 2",shift(new Float32Array(one),0,Hc+6,0))]}},
+{id:"prateleira-u",name:"Prateleira em U",kind:"modelo",cats:["parede","organizacao"],rank:77,added:93,tags:["novo"],
+ desc:"Prateleira de parede com borda frontal, furos na traseira e medidas sob medida.",
+ tips:{"Orientação":"Costas para baixo, como na tela","Camada":"0,2 mm","Preenchimento":"20%","Fixação":"2 parafusos com bucha"},
+ params:[G("Prateleira"),R("larg","Largura",200,80,250,5,"mm"),R("prof","Profundidade",90,40,180,5,"mm"),R("borda","Altura da borda",25,8,60,1,"mm"),R("alt","Altura das costas",60,30,120,1,"mm"),R("esp","Espessura",4,3,8,.5,"mm")],
+ async build(p){const W=p.larg,D=p.prof,t=p.esp,H=p.alt;
+  const back=sk(W,H,g=>{g.fillRect(0,0,W,H);holeC(g,20,H*.3,2.2);holeC(g,W-20,H*.3,2.2)},0,t);
+  const floor=boxZ(0,0,t-.01,W,t,D),lip=boxZ(0,0,D-t,W,p.borda,D);
+  return [P1("prateleira",concat(back,floor,lip))]}},
+{id:"suporte-secador",name:"Suporte de secador",kind:"modelo",cats:["parede","organizacao"],rank:78,added:94,tags:["novo"],
+ desc:"Suporte de parede com argola para o bico do secador de cabelo.",
+ tips:{"Camada":"0,2 mm","Paredes":"4","Preenchimento":"30%","Fixação":"2 parafusos com bucha"},
+ params:[G("Suporte"),R("da","Diâmetro da argola",55,35,90,1,"mm"),R("afast","Afastamento da parede",35,20,70,1,"mm"),R("esp","Espessura",6,4,10,.5,"mm")],
+ async build(p){const r=p.da/2,t=p.esp,W=p.da+2*t+10,Df=p.afast+2*r+2*t,Hp=70;
+  const ring=sk(W,Df,g=>{rrect(g,W/2-12,0,24,p.afast+4,4);circle(g,W/2,p.afast+r+t,r+t);cut(g,gg=>circle(gg,W/2,p.afast+r+t,r))},0,t);
+  const back=skUp(W,Hp,g=>{rrect(g,0,0,W,Hp,6);holeC(g,W/2,14,2.2);holeC(g,W/2,Hp-26,2.2)},Df-1,t);
+  return [P1("suporte",concat(ring,back))]}},
+{id:"grelha-ventilacao",name:"Grelha de ventilação",kind:"modelo",cats:["parede","mecanica"],rank:79,added:95,tags:["novo"],
+ desc:"Grelha retangular ou redonda com aletas, colmeia ou furos, com aba de acabamento. Para móvel, parede e caixa de equipamento.",
+ tips:{"Camada":"0,2 mm","Suporte":"Não precisa","Medida":"A medida é a do vão (furo)","Fixação":"Pressão, cola ou parafuso"},
+ params:[G("Grelha"),SEG("forma","Formato","ret",[["ret","Retangular"],["redonda","Redonda"]]),R("larg","Largura ou diâmetro do vão",100,30,240,1,"mm"),R("alt","Altura do vão",60,30,240,1,"mm",{show:p=>p.forma==="ret"}),SEG("pad","Padrão","colmeia",[["colmeia","Colmeia"],["aletas","Aletas"],["furos","Furos"]]),R("aba","Aba",8,3,20,1,"mm")],
+ async build(p){const red=p.forma==="redonda",w=p.larg,h=red?w:p.alt,a=p.aba,W=w+2*a,H=h+2*a;
+  const shape=(g,o)=>red?circle(g,W/2,H/2,w/2+o):rrect(g,a-o,a-o,w+2*o,h+2*o,3);
+  const pat=gg=>{gg.save();gg.beginPath();red?gg.arc(W/2,H/2,w/2-2,0,7):gg.rect(a+2,a+2,w-4,h-4);gg.clip();
+    if(p.pad==="aletas")for(let y=a+4;y<H-a;y+=7)gg.fillRect(0,y,W,4);else if(p.pad==="furos")for(let y=a;y<H;y+=8)for(let x=a;x<W;x+=8)circle(gg,x+((y/8|0)%2?4:0),y,3);else{const dx=9,dy=dx*Math.sqrt(3)/2;let r=0;for(let y=a;y<H;y+=dy,r++)for(let x=a+(r%2?dx/2:0);x<W;x+=dx)poly(gg,hexPts(x,y,7))}gg.restore()};
+  const flange=sk(W,H,g=>{shape(g,a);cut(g,pat)},0,2.4),neck=sk(W,H,g=>{shape(g,0);cut(g,gg=>shape(gg,-1.6))},2.39,12);
+  return [P1("grelha",concat(flange,neck))]}},
+{id:"passa-cabo",name:"Passa-cabo de mesa",kind:"modelo",cats:["mesa","organizacao"],rank:80,added:96,tags:["novo"],
+ desc:"Acabamento para furo de mesa com tampa e abertura para os fios. Informe o diâmetro do furo e a espessura do tampo.",
+ tips:{"Camada":"0,2 mm","Folga":"Diâmetro do furo − 0,5 mm","Paredes":"3","Suporte":"Não precisa"},
+ params:[G("Passa-cabo"),R("df","Diâmetro do furo",60,25,100,1,"mm"),R("tampo","Espessura do tampo",25,10,40,1,"mm"),R("aba","Aba",8,4,15,1,"mm")],
+ async build(p){const r=p.df/2-.25,t=2;
+  const body=revolve(p.tampo+2.5,Math.ceil(p.tampo/2),96,z=>z<2.5?r+p.aba:r,()=>r-t);
+  const R0=r-t-.3,cap=sk(2*(R0+3),2*(R0+3),g=>{circle(g,R0+3,R0+3,R0+3);cut(g,gg=>gg.fillRect(R0+3-R0*.5,0,R0,R0*.7+3))},0,2.5),lip=sk(2*(R0+3),2*(R0+3),g=>{circle(g,R0+3,R0+3,R0);cut(g,gg=>{circle(gg,R0+3,R0+3,R0-1.6);gg.fillRect(R0+3-R0*.5,0,R0,R0*.7+3)})},2.49,8);
+  return [P1("aro",body),P1("tampa",shift(concat(cap,lip),r+p.aba+6,-(R0+3),0))]}},
+{id:"abracadeira-catraca",name:"Abraçadeira com trava (enforca-gato)",kind:"modelo",cats:["mecanica","organizacao"],rank:81,added:97,tags:["novo"],
+ desc:"Abraçadeira reutilizável com dentes e trava: passe a ponta pela cabeça e puxe. Imprime várias de uma vez.",
+ tips:{"Material":"PETG ou TPU 95A","Camada":"0,16 mm","Reutilizar":"Levante a lingueta para soltar","Dica":"Imprima deitada"},
+ params:[G("Abraçadeira"),R("comp","Comprimento",150,60,250,5,"mm"),R("larg","Largura",6,4,10,.5,"mm"),R("qtd","Quantidade",4,1,10,1)],
+ async build(p){const L=p.comp,w=p.larg,t=1.4,head=w+5;
+  const one=()=>{const strap=boxZ(head-.5,0,0,L,w,t),teeth=[];for(let x=head+8;x<L-8;x+=2)teeth.push(sk(2,w,g=>g.fillRect(0,0,1.1,w),t-.01,t+.7).map((v,i)=>i%3===0?v+x:v));
+    const hd=sk(head,w+4,g=>{rrect(g,0,0,head,w+4,1.5);cut(g,gg=>gg.fillRect(2,2,head-4,w+.4))},0,4.5).map((v,i)=>i%3===1?v-2:v);
+    const pawl=boxZ(2,-0,1.4,head-2,w,2.1);return concat(strap,...teeth,hd,pawl)};
+  const out=[];for(let i=0;i<p.qtd;i++)out.push(shift(one(),0,i*(w+8),0));return [P1("abraçadeiras",concat(...out))]}},
+];
+ITEMS.push(...ITEMS2);
+
 const SOON=[
  ["Foto para 3D com IA","Envie uma foto e receba um bonequinho ou objeto pronto para imprimir. Em estudo, com créditos.","ai"],["Texto para 3D com IA","Descreva a peça em palavras e gere o modelo. Em estudo.","ai"],
  ["Divisor de modelo","Corta peças grandes em partes que cabem na mesa, com pinos de encaixe.","split"],["Molde de silicone","Envie um STL e receba a caixa do molde com canal de vazamento.","mold"],
