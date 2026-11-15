@@ -769,6 +769,96 @@ function smoothGrid(P,W,H,c,occ){
   if(window.__DBG){let f=0;for(let t=0;t<P.length;t+=9){if(O[t+2]!==O[t+5]||O[t+2]!==O[t+8])continue;if(ar(t,t+3,t+6,O)*ar(t,t+3,t+6,P)<=0)f++}console.log("SMOOTHFLIP",f,P.length/9)}
   return P;
 }
+/* ================= MALHA VETORIAL (contornos lisos) =================
+   Converte máscaras de pixels em contornos suaves (marching squares sobre a máscara desfocada),
+   simplifica e extruda cada nível como sólido fechado. Paredes ficam retas e lisas, sem escada. */
+function blurMask(m,W,H){
+  let a=new Float32Array(W*H);for(let i=0;i<W*H;i++)a[i]=m[i]?1:0;
+  const t=new Float32Array(W*H);
+  for(let pass=0;pass<2;pass++){
+    for(let r=0;r<H;r++){const o=r*W;for(let x=0;x<W;x++){const l=x>0?a[o+x-1]:0,c=a[o+x],rr=x<W-1?a[o+x+1]:0;t[o+x]=(l+2*c+rr)/4}}
+    for(let r=0;r<H;r++){const o=r*W;for(let x=0;x<W;x++){const u=r>0?t[o-W+x]:0,c=t[o+x],d=r<H-1?t[o+W+x]:0;a[o+x]=(u+2*c+d)/4}}
+  }
+  return a;
+}
+function maskLoops(F,W,H,c){
+  const Wp=W+2,Hp=H+2,val=(i,j)=>(i<1||j<1||i>W||j>H)?0:F[(j-1)*W+(i-1)];
+  const X=i=>(i-.5)*c,Y=j=>(H-j+.5)*c,iso=.5;
+  const pts=new Map(),adj=new Map();
+  const hId=(i,j)=>2*(j*Wp+i),vId=(i,j)=>2*(j*Wp+i)+1;
+  const pt=(id,i,j,horiz)=>{if(pts.has(id))return;const a=val(i,j),b=horiz?val(i+1,j):val(i,j+1),t=Math.min(.999,Math.max(.001,(iso-a)/(b-a)));
+    pts.set(id,horiz?[X(i+t),Y(j)]:[X(i),Y(j+t)])};
+  const link=(a,b)=>{(adj.get(a)||adj.set(a,[]).get(a)).push(b);(adj.get(b)||adj.set(b,[]).get(b)).push(a)};
+  for(let j=0;j<Hp-1;j++)for(let i=0;i<Wp-1;i++){
+    const tl=val(i,j)>iso,tr=val(i+1,j)>iso,br=val(i+1,j+1)>iso,bl=val(i,j+1)>iso,k=tl|tr<<1|br<<2|bl<<3;if(k===0||k===15)continue;
+    const E=[hId(i,j),vId(i+1,j),hId(i,j+1),vId(i,j)];
+    const P=e=>{if(e===0)pt(E[0],i,j,true);else if(e===1)pt(E[1],i+1,j,false);else if(e===2)pt(E[2],i,j+1,true);else pt(E[3],i,j,false);return E[e]};
+    const S=(a,b)=>link(P(a),P(b));
+    const ctr=(val(i,j)+val(i+1,j)+val(i+1,j+1)+val(i,j+1))/4>iso;
+    switch(k){case 1:case 14:S(3,0);break;case 2:case 13:S(0,1);break;case 3:case 12:S(3,1);break;case 4:case 11:S(1,2);break;
+      case 6:case 9:S(0,2);break;case 7:case 8:S(3,2);break;
+      case 5:if(ctr){S(0,1);S(2,3)}else{S(3,0);S(1,2)}break;
+      case 10:if(ctr){S(3,0);S(1,2)}else{S(0,1);S(2,3)}break}
+  }
+  const seen=new Set(),loops=[];
+  for(const start of adj.keys()){if(seen.has(start))continue;const L=[];let prev=null,cur=start;
+    while(cur!=null&&!seen.has(cur)){seen.add(cur);L.push(pts.get(cur));const n=adj.get(cur);const nx=n[0]!==prev&&!seen.has(n[0])?n[0]:(n[1]!==undefined&&!seen.has(n[1])?n[1]:null);prev=cur;cur=nx}
+    if(L.length>=3)loops.push(L)}
+  return loops;
+}
+function dpSimplify(L,tol){
+  if(L.length<8)return L;const n=L.length,keep=new Uint8Array(n);
+  let far=0,fd=-1;for(let i=1;i<n;i++){const d=(L[i][0]-L[0][0])**2+(L[i][1]-L[0][1])**2;if(d>fd){fd=d;far=i}}
+  const rec=(a,b)=>{const [x1,y1]=L[a],[x2,y2]=L[b%n],dx=x2-x1,dy=y2-y1,len=Math.hypot(dx,dy)||1e-9;let md=-1,mi=-1;
+    for(let i=a+1;i<b;i++){const d=Math.abs((L[i][0]-x1)*dy-(L[i][1]-y1)*dx)/len;if(d>md){md=d;mi=i}}
+    if(md>tol){keep[mi]=1;rec(a,mi);rec(mi,b)}};
+  keep[0]=1;keep[far]=1;rec(0,far);rec(far,n);
+  const o=[];for(let i=0;i<n;i++)if(keep[i])o.push(L[i]);return o.length>=3?o:L;
+}
+const loopArea=L=>{let a=0;for(let i=0,n=L.length;i<n;i++){const p=L[i],q=L[(i+1)%n];a+=p[0]*q[1]-q[0]*p[1]}return a/2};
+function inLoop(pt,L){let ins=false;for(let i=0,j=L.length-1;i<L.length;j=i++){const [xi,yi]=L[i],[xj,yj]=L[j];if((yi>pt[1])!==(yj>pt[1])&&pt[0]<(xj-xi)*(pt[1]-yi)/(yj-yi)+xi)ins=!ins}return ins}
+function loopsToShapes(loops){
+  const info=loops.map(L=>({L,a:Math.abs(loopArea(L)),par:-1,depth:0})).filter(o=>o.a>1e-4);
+  info.sort((p,q)=>q.a-p.a);
+  for(let i=0;i<info.length;i++){const t=info[i].L[0];for(let j=i-1;j>=0;j--){if(inLoop(t,info[j].L)){info[i].par=j;info[i].depth=info[j].depth+1;break}}}
+  const shapes=[];const idx=new Map();
+  info.forEach((o,i)=>{const cw=loopArea(o.L)<0;if(o.depth%2===0){const L=cw?o.L.slice().reverse():o.L;idx.set(i,shapes.length);shapes.push({outer:L,holes:[]})}});
+  info.forEach((o,i)=>{if(o.depth%2===1&&idx.has(o.par)){const L=loopArea(o.L)>0?o.L.slice().reverse():o.L;shapes[idx.get(o.par)].holes.push(L)}});
+  return shapes;
+}
+function maskShapes(m,W,H,c){
+  const loops=maskLoops(blurMask(m,W,H),W,H,c).map(L=>dpSimplify(L,Math.min(.02,c*.15)));
+  return loopsToShapes(loops);
+}
+/* extruda formas entre z0(x,y) e z1(x,y); z pode ser número ou função */
+function extrudeShapes(shapes,z0,z1,out){
+  const P=out||[],Z0=typeof z0==="function"?z0:()=>z0,Z1=typeof z1==="function"?z1:()=>z1;
+  const tri=(a,b,d)=>P.push(a[0],a[1],a[2],b[0],b[1],b[2],d[0],d[1],d[2]);
+  for(const s of shapes){
+    const all=[s.outer,...s.holes];
+    for(const L of all)for(let i=0,n=L.length;i<n;i++){const p=L[i],q=L[(i+1)%n];
+      const p0=[p[0],p[1],Z0(p[0],p[1])],q0=[q[0],q[1],Z0(q[0],q[1])],p1=[p[0],p[1],Z1(p[0],p[1])],q1=[q[0],q[1],Z1(q[0],q[1])];
+      tri(p0,q0,q1);tri(p0,q1,p1)}
+    const V=[];all.forEach(L=>L.forEach(p=>V.push(p)));
+    let faces;try{faces=THREE.ShapeUtils.triangulateShape(s.outer.map(p=>new THREE.Vector2(p[0],p[1])),s.holes.map(h=>h.map(p=>new THREE.Vector2(p[0],p[1]))))}catch(e){faces=[]}
+    for(const f of faces){let [a,b,d]=f.map(k=>V[k]);if(!a||!b||!d)continue;const ar=(b[0]-a[0])*(d[1]-a[1])-(b[1]-a[1])*(d[0]-a[0]);if(ar<0){const t=b;b=d;d=t}
+      tri([a[0],a[1],Z1(a[0],a[1])],[b[0],b[1],Z1(b[0],b[1])],[d[0],d[1],Z1(d[0],d[1])]);
+      tri([a[0],a[1],Z0(a[0],a[1])],[d[0],d[1],Z0(d[0],d[1])],[b[0],b[1],Z0(b[0],b[1])])}
+  }
+  return P;
+}
+/* níveis empilhados: cover(i,z0,z1) diz se o pixel i preenche a fatia [z0,z1] */
+function vecLevels(W,H,c,Z,cover){
+  if(Z.length<2||Z.length>41)return null;
+  const P=[];let prev=null,pz0=0,pm=null;
+  const flush=(z0,z1,m)=>{if(m)extrudeShapes(maskShapes(m,W,H,c),z0,z1,P)};
+  for(let k=0;k<Z.length-1;k++){const z0=Z[k],z1=Z[k+1],m=new Uint8Array(W*H);let any=0;
+    for(let i=0;i<W*H;i++)if(cover(i,z0,z1)){m[i]=1;any=1}
+    if(pm&&any&&m.every((v,i)=>v===pm[i])){continue}
+    if(pm)flush(pz0,z0,pm);pm=any?m:null;pz0=z0}
+  if(pm)flush(pz0,Z[Z.length-1],pm);
+  return new Float32Array(P);
+}
 function heightfield(wMm,hMm,res,layers){
   const W=Math.max(1,Math.ceil(wMm*res)),H=Math.max(1,Math.ceil(hMm*res)),c=1/res;
   const hi=new Float32Array(W*H),lo=new Float32Array(W*H);
@@ -782,6 +872,8 @@ function heightfield(wMm,hMm,res,layers){
     for(let i=0;i<W*H;i++) if(d[i*4+3]>127){if(L.cut){hi[i]=0;lo[i]=0}else{if(L.h!=null)hi[i]=L.h;if(L.lo!=null)lo[i]=L.lo}}
   }
   for(let i=0;i<W*H;i++)if(!(hi[i]>lo[i]+1e-6)){hi[i]=0;lo[i]=0}
+  if(!SHARP){const zs=new Set();for(let i=0;i<W*H;i++)if(hi[i]>lo[i]){zs.add(hi[i]);zs.add(lo[i])}const Z=[...zs].sort((m,n)=>m-n);
+    const v=vecLevels(W,H,c,Z,(i,z0,z1)=>hi[i]>lo[i]&&lo[i]<=z0+1e-6&&hi[i]>=z1-1e-6);if(v)return v}
   /* pixels que só se tocam pela quina criariam aresta dupla: preenche o vizinho */
   for(let pass=0;pass<4;pass++){let ch=0;
     for(let r=0;r<H-1;r++)for(let x=0;x<W-1;x++){const A=r*W+x,B=A+1,C=A+W,D=C+1;
@@ -1048,6 +1140,8 @@ function columns(wMm,hMm,res,ox,oy,fn){
   const get=i=>{const o=[];for(let k=0;k<cnt[i];k++)o.push([iv[i*2*K+2*k],iv[i*2*K+2*k+1]]);return o};
   const set=(i,a)=>{a=ivNorm(a.map(t=>[Math.round(t[0]*50)/50,Math.round(t[1]*50)/50]),K);cnt[i]=a.length;a.forEach((s,k)=>{iv[i*2*K+2*k]=s[0];iv[i*2*K+2*k+1]=s[1]})};
   for(let r=0;r<H;r++)for(let x=0;x<W;x++){const a=fn(ox+(x+.5)*c,oy+(H-1-r+.5)*c);if(a&&a.length)set(r*W+x,a)}
+  if(!SHARP){const zs=new Set();for(let i=0;i<N;i++)for(let k=0;k<cnt[i];k++){zs.add(iv[i*2*K+2*k]);zs.add(iv[i*2*K+2*k+1])}const Z=[...zs].sort((m,n)=>m-n);
+    const v=vecLevels(W,H,c,Z,(i,z0,z1)=>{for(let k=0;k<cnt[i];k++)if(iv[i*2*K+2*k]<=z0+1e-6&&iv[i*2*K+2*k+1]>=z1-1e-6)return true;return false});if(v)return shift(v,ox,oy,0)}
   /* contatos só pela aresta (diagonal) deixariam a malha aberta: completa o vizinho */
   for(let pass=0;pass<4;pass++){let ch=0;
     for(let r=0;r<H-1;r++)for(let x=0;x<W-1;x++){const A=r*W+x,B=A+1,C=A+W,D=C+1;
@@ -1259,16 +1353,38 @@ function arcText(g,font,txt,cx,cy,R,top){g.save();g.font=font;g.textAlign="cente
   ch.forEach((c,i)=>{const mid=a+ws[i]/2/R;g.save();if(top){g.translate(cx+R*Math.sin(mid),cy-R*Math.cos(mid));g.rotate(mid)}else{g.translate(cx+R*Math.sin(mid),cy+R*Math.cos(mid));g.rotate(-mid)}g.fillText(c,0,0);g.restore();a+=ws[i]/R});g.restore()}
 /* tecla de teclado mecânico (encaixe em cruz, padrão MX) */
 async function keycapParts(p,ox){
-  const u={"1":1,"1.25":1.25,"1.5":1.5,"2":2}[p.tamTecla]||1,w=19.05*u-1.05,D=18,H=p.altTecla,tap=2.6,th=1.5,res=8,ox0=ox||0;
+  const u={"1":1,"1.25":1.25,"1.5":1.5,"2":2}[p.tamTecla]||1,w=19.05*u-1.05,D=18,H=p.altTecla,tap=2.6,th=1.5,res=10,ox0=ox||0,cx=w/2,cy=D/2,R0=1.2;
   const topS=x=>H-(p.concava?.9*Math.max(0,1-Math.pow((x-w/2)/(w/2-tap),2)):0);
-  const fn=(x,y)=>{const e=sdRR(x,y,0,0,w,D,1.2);if(e<0)return null;const ts=topS(x),hi=Math.min(ts,H*e/tap+.6),ce=e>th?Math.min(ts-th,H*(e-th)/tap):0;
-    if(ce<.3)return [[0,hi]];const dx=Math.abs(x-w/2),dy=Math.abs(y-D/2);
-    if(Math.hypot(dx,dy)<2.75){const cross=(dx<2.05&&dy<.66)||(dy<2.05&&dx<.66);return [[cross?Math.min(ce-.2,5.2):1.2,hi]]}return [[ce,hi]]};
-  const parts=[{name:"tecla",pos:shift(columns(w,D,res,0,0,fn),ox0,0,0),c:1}];
+  const outZ=(x,y,e)=>Math.min(topS(x),H*e/tap+.6),inZ=(x,y,e)=>Math.max(0,Math.min(topS(x)-th,H*(e-th)/tap));
+  /* anel: retângulo arredondado recuado "e" da borda, sempre com o mesmo número de pontos */
+  const NS=28,NC=8;
+  const ring=e=>{const a=w/2-e,b=D/2-e,r=Math.max(.15,Math.min(R0-e*.4,a-.01,b-.01)),o=[];
+    const side=(x0,y0,x1,y1)=>{for(let i=0;i<NS;i++){const t=i/NS;o.push([x0+(x1-x0)*t,y0+(y1-y0)*t])}};
+    const arc=(qx,qy,a0)=>{for(let i=0;i<NC;i++){const t=a0+Math.PI/2*i/NC;o.push([qx+r*Math.cos(t),qy+r*Math.sin(t)])}};
+    side(cx-a+r,cy-b,cx+a-r,cy-b);arc(cx+a-r,cy-b+r,-Math.PI/2);side(cx+a,cy-b+r,cx+a,cy+b-r);arc(cx+a-r,cy+b-r,0);
+    side(cx+a-r,cy+b,cx-a+r,cy+b);arc(cx-a+r,cy+b-r,Math.PI/2);side(cx-a,cy+b-r,cx-a,cy-b+r);arc(cx-a+r,cy-b+r,Math.PI);return o};
+  const P=[],tri=(A,B,C)=>P.push(A[0],A[1],A[2],B[0],B[1],B[2],C[0],C[1],C[2]);
+  const strip=(A,B,za,zb,up)=>{const n=A.length;for(let i=0;i<n;i++){const j=(i+1)%n,a0=[A[i][0],A[i][1],za(A[i])],a1=[A[j][0],A[j][1],za(A[j])],b0=[B[i][0],B[i][1],zb(B[i])],b1=[B[j][0],B[j][1],zb(B[j])];
+    if(up){tri(a0,a1,b1);tri(a0,b1,b0)}else{tri(a0,b1,a1);tri(a0,b0,b1)}}};
+  const emax=Math.min(w,D)/2-.6;
+  const oE=[0];for(let k=1;k<=26;k++)oE.push(tap*k/26);for(let e=tap+.4;e<emax;e+=.4)oE.push(e);oE.push(emax);
+  const iE=[th];for(let k=1;k<=26;k++)iE.push(th+tap*k/26);for(let e=th+tap+.4;e<emax;e+=.4)iE.push(e);iE.push(emax);
+  const oR=oE.map(ring),iR=iE.map(ring);
+  /* parede vertical da base (0 a 0,6) e fundo da borda */
+  {const A=oR[0],n=A.length;for(let i=0;i<n;i++){const j=(i+1)%n,p0=[A[i][0],A[i][1],0],q0=[A[j][0],A[j][1],0],p1=[A[i][0],A[i][1],.6],q1=[A[j][0],A[j][1],.6];tri(p0,q0,q1);tri(p0,q1,p1)}}
+  strip(oR[0],iR[0],()=>0,()=>0,false);
+  for(let k=0;k<oR.length-1;k++)strip(oR[k],oR[k+1],q=>outZ(q[0],q[1],oE[k]),q=>outZ(q[0],q[1],oE[k+1]),true);
+  for(let k=0;k<iR.length-1;k++)strip(iR[k],iR[k+1],q=>inZ(q[0],q[1],iE[k]),q=>inZ(q[0],q[1],iE[k+1]),false);
+  {const A=oR[oR.length-1],B=iR[iR.length-1],n=A.length,co=[cx,cy,topS(cx)],ci=[cx,cy,inZ(cx,cy,emax)];
+   for(let i=0;i<n;i++){const j=(i+1)%n;tri(co,[A[i][0],A[i][1],outZ(A[i][0],A[i][1],emax)],[A[j][0],A[j][1],outZ(A[j][0],A[j][1],emax)]);tri(ci,[B[j][0],B[j][1],inZ(B[j][0],B[j][1],emax)],[B[i][0],B[i][1],inZ(B[i][0],B[i][1],emax)])}}
+  /* haste com encaixe em cruz (MX) */
+  const ceC=inZ(cx,cy,emax),cd=Math.min(ceC-.2,5.2),circ=[];for(let i=0;i<48;i++){const t=i/48*Math.PI*2;circ.push([cx+2.75*Math.cos(t),cy+2.75*Math.sin(t)])}
+  const cr=[[2.05,.66],[.66,.66],[.66,2.05],[-.66,2.05],[-.66,.66],[-2.05,.66],[-2.05,-.66],[-.66,-.66],[-.66,-2.05],[.66,-2.05],[.66,-.66],[2.05,-.66]].map(([x,y])=>[cx+x,cy+y]).reverse();
+  extrudeShapes([{outer:circ,holes:[cr]}],1.2,cd,P);extrudeShapes([{outer:circ,holes:[]}],cd,ceC+.3,P);
+  const parts=[{name:"tecla",pos:shift(new Float32Array(P),ox0,0,0),c:1}];
   const txt=(p.legenda||"").trim();
   if(txt){const emo=/\p{Extended_Pictographic}/u.test(txt),m=emo?await measureEmoji(p.tamLeg,txt):await fitText(p.fonteLeg,p.tamLeg,txt,w-2*tap-2),M=maskOf(w,D,res,textAt(m,txt,w/2,D/2));
-    const f2=(x,y)=>{const ix=Math.floor(x*res),r=M.H-1-Math.floor(y*res);if(ix<0||r<0||ix>=M.W||r>=M.H||!M.m[r*M.W+ix])return null;const ts=topS(x);return [[ts,ts+.5]]};
-    const lg=columns(w,D,res,0,0,f2);if(lg.length)parts.push({name:"legenda",pos:shift(lg,ox0,0,0),c:0})}
+    const sh=maskShapes(M.m,M.W,M.H,1/res);const lg=new Float32Array(extrudeShapes(sh,(x)=>topS(x),(x)=>topS(x)+.5));if(lg.length)parts.push({name:"legenda",pos:shift(lg,ox0,0,0),c:0})}
   return parts;
 }
 const KEY_PARAMS=()=>[SEG("tamTecla","Tamanho","1",[["1","1u"],["1.25","1,25u"],["1.5","1,5u"],["2","2u"]]),R("altTecla","Altura da tecla",8,6,12,.5,"mm"),C("concava","Topo côncavo",true),T("legenda","Legenda (letra ou emoji)","OK",{max:6}),FSEL("fonteLeg","Fonte da legenda","display"),R("tamLeg","Tamanho da legenda",6,3,11,.5,"mm")];
@@ -2927,7 +3043,7 @@ const ADS={client:"ca-pub-3513762975910194",slot:""};
   if(!document.querySelector('script[src*="adsbygoogle.js"]')){const sc=document.createElement("script");sc.async=true;sc.src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client="+ADS.client;sc.crossOrigin="anonymous";document.head.appendChild(sc)}
   if(!ADS.slot){boxes.forEach(b=>b.hidden=true);return}
   boxes.forEach(b=>{b.textContent="";b.classList.add("live");const i=document.createElement("ins");i.className="adsbygoogle";i.style.display="block";i.dataset.adClient=ADS.client;i.dataset.adSlot=ADS.slot;i.dataset.adFormat="auto";i.dataset.fullWidthResponsive="true";b.appendChild(i);try{(window.adsbygoogle=window.adsbygoogle||[]).push({})}catch(e){}})})();
-const SUPPORT={mp:[[5,"https://mpago.la/26D4Jb7"],[10,"https://mpago.la/2BHHaSV"],[15,"https://mpago.la/29yuAUJ"],[20,"https://mpago.la/13DD1UV"],[50,"https://mpago.la/2oLPBvD"],[100,"https://mpago.la/2HrTPGr"]],stripe:"",paypal:"",kofi:"",pix:{key:"7b7d5b5e-0434-4e32-82cb-f26a19f3f9aa",name:"LUIZ G DE C C FADIGA",city:"SAO JOAO DA B",code:"00020101021126580014br.gov.bcb.pix01367b7d5b5e-0434-4e32-82cb-f26a19f3f9aa5204000053039865802BR5920LUIZ G DE C C FADIGA6013SAO JOAO DA B62070503***6304DAF5"}};
+const SUPPORT={mp:[[5,"https://mpago.la/26D4Jb7"],[10,"https://mpago.la/2BHHaSV"],[15,"https://mpago.la/29yuAUJ"],[20,"https://mpago.la/13DD1UV"],[50,"https://mpago.la/2oLPBvD"],[100,"https://mpago.la/2HrTPGr"]],stripe:"",paypal:"",kofi:"",pix:{}};
 function renderSupport(){const c=[],card=(eye,title,txt,href,btn,pro)=>`<div class="plan${pro?" pro":""}"><p class="eyebrow">${eye}</p><h3 style="font-size:22px">${title}</h3><p class="muted">${txt}</p><a class="btn${pro?" primary":""}" href="${esc(href)}" target="_blank" rel="noopener">${btn}</a></div>`;
   if(SUPPORT.mp&&SUPPORT.mp.length)c.push(`<div class="plan pro"><p class="eyebrow">Qualquer país</p><h3 style="font-size:22px">Cartão de crédito</h3><p class="muted">Pagamento seguro pelo Mercado Pago. Aceita Visa, Mastercard e American Express, inclusive de fora do Brasil, além de Pix e boleto.</p><div class="mpgrid">${SUPPORT.mp.map(([v,u])=>`<a class="btn" href="${esc(u)}" target="_blank" rel="noopener" data-noi18n>R$ ${v}</a>`).join("")}</div><p class="note">Valores em reais. O banco do cartão converte para a sua moeda.</p></div>`);
   if(SUPPORT.stripe)c.push(card("Qualquer país","Cartão, Apple Pay ou Google Pay","Você escolhe o valor e paga na sua moeda.",SUPPORT.stripe,"Apoiar com cartão",true));
