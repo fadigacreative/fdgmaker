@@ -19,7 +19,7 @@ async function contact(req, env) {
   const ip = req.headers.get("cf-connecting-ip") || "?", now = Date.now(), last = recent.get(ip) || 0;
   if (now - last < 60000) return json({ ok: false, error: "rate" }, 429);
   recent.set(ip, now); if (recent.size > 5000) recent.clear();
-  const tos = String(env.CONTACT_TO || "contact@fdgmaker.com").split(",").map(x => x.trim()).filter(Boolean), from = "site@fdgmaker.com";
+  const tos = String(env.CONTACT_TO || "contact@fdgmaker.com").split(",").map(x => x.trim()).filter(Boolean), from = "site@envio.fdgmaker.com";
   if (!env.MAIL) return json({ ok: false, error: "config" }, 500);
   const body = `Nome: ${nome}\nE-mail: ${email}\nAssunto: ${assunto}\nPaís: ${req.headers.get("cf-ipcountry") || "?"}\n\n${msg}\n`;
   const raw = [
