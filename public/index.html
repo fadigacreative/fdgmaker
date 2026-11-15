@@ -355,6 +355,7 @@ footer .legal{border-top:1px solid var(--line);padding-block:16px;font-size:12.5
 .freeline{font-weight:600;color:var(--accent-fg);margin:0 0 12px;font-size:14px}
 .mpgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:4px 0 8px}
 .mpgrid .btn{justify-content:center;font-weight:600}
+.cform{display:grid;gap:14px;max-width:560px}.cform .field input,.cform .field select,.cform .field textarea{width:100%;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--ink)}.cform textarea{resize:vertical}.cform .btn{justify-self:start}.hpot{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}.story h3{margin:22px 0 6px;font-size:18px}
 </style>
 
 <header class="top">
@@ -627,14 +628,94 @@ footer .legal{border-top:1px solid var(--line);padding-block:16px;font-size:12.5
   <div class="wrap narrow">
     <div class="ghead" style="padding-top:32px"><div><p class="eyebrow">Privacidade</p><h1>Política de privacidade</h1></div></div>
     <div class="story">
-      <p>O FDG Maker não pede cadastro. As fotos, logos, SVGs e STLs que você envia são processados no seu navegador e não são enviados a nenhum servidor.</p>
+      <p>O FDG Maker não pede cadastro. As fotos, logos, fontes, SVGs e STLs que você envia são processados no seu navegador e não são enviados a nenhum servidor.</p>
       <p>Preferências como idioma, modelos salvos e valores da calculadora ficam guardados apenas neste navegador. Você pode apagá-los limpando os dados do site.</p>
-      <p>O site exibe anúncios do Google AdSense. O Google e seus parceiros podem usar cookies para mostrar anúncios com base nas suas visitas a este e a outros sites. Você pode desativar os anúncios personalizados nas configurações de anúncios do Google, em adssettings.google.com.</p>
-      <p>Para saber como o Google usa os dados, consulte policies.google.com/technologies/partner-sites.</p>
-      <p>Pagamentos de apoio (Pix, cartão ou PayPal) são feitos diretamente no serviço escolhido. O FDG Maker não recebe nem guarda dados de pagamento.</p>
+      <h3>Formulário de contato</h3>
+      <p>Quando você usa o formulário de contato, recebemos o nome, o e-mail e a mensagem que você escreveu, apenas para responder. Esses dados não são vendidos nem usados para propaganda. Você pode pedir a exclusão a qualquer momento pelo mesmo canal.</p>
+      <h3>Anúncios e estatísticas</h3>
+      <p>O site exibe anúncios do Google AdSense e mede visitas com o Google Analytics. O Google e seus parceiros podem usar cookies para mostrar anúncios com base nas suas visitas a este e a outros sites. Você pode desativar os anúncios personalizados em adssettings.google.com. Veja como o Google usa os dados em policies.google.com/technologies/partner-sites. Detalhes na <a href="#cookies">política de cookies</a>.</p>
+      <h3>Pagamentos</h3>
+      <p>Contribuições de apoio são feitas diretamente no Mercado Pago. O FDG Maker não recebe nem guarda dados de pagamento.</p>
+      <h3>Seus direitos (LGPD)</h3>
+      <p>Você pode pedir acesso, correção ou exclusão dos dados que nos enviou pelo <a href="#contato">contato</a>.</p>
+      <p class="muted">Atualizado em 15 de novembro de 2026.</p>
     </div>
   </div>
 </section>
+
+<section class="view" data-view="termos" hidden>
+  <div class="wrap narrow">
+    <div class="ghead" style="padding-top:32px"><div><p class="eyebrow">Termos</p><h1>Termos de uso</h1></div></div>
+    <div class="story">
+      <p>Ao usar o FDG Maker você concorda com estes termos. Se não concordar, não use o site.</p>
+      <h3>O serviço</h3>
+      <p>O FDG Maker gera arquivos de impressão 3D (STL e 3MF) a partir das medidas e textos que você escolhe. O uso é gratuito, sem cadastro e sem limite de downloads. O site é mantido por anúncios e por contribuições voluntárias.</p>
+      <h3>Responsabilidade pelo uso</h3>
+      <p>Os modelos são oferecidos como estão. Confira as medidas, o encaixe e a resistência antes de usar uma peça em algo importante. Peças impressas não substituem itens certificados de segurança, como brinquedos para bebês, peças que sustentam peso sobre pessoas, utensílios de uso médico ou peças elétricas. O FDG Maker não se responsabiliza por danos causados pelo uso das peças impressas.</p>
+      <h3>O que você envia</h3>
+      <p>Textos, fotos, logos, fontes, SVGs e STLs que você usa são processados no seu navegador. Você é responsável por ter o direito de usar esse conteúdo, inclusive marcas e imagens de terceiros.</p>
+      <h3>Uso proibido</h3>
+      <p>Não use o site para gerar peças que violem a lei, como armas ou réplicas de documentos, nem para tentar sobrecarregar, copiar em massa ou atacar o serviço.</p>
+      <h3>Mudanças</h3>
+      <p>Os modelos, recursos e estes termos podem mudar a qualquer momento. A versão publicada nesta página é a que vale.</p>
+      <p class="muted">Atualizado em 15 de novembro de 2026. Dúvidas: <a href="#contato">contato</a>.</p>
+    </div>
+  </div>
+</section>
+
+<section class="view" data-view="licenca" hidden>
+  <div class="wrap narrow">
+    <div class="ghead" style="padding-top:32px"><div><p class="eyebrow">Licença</p><h1>Licença de uso dos arquivos</h1></div></div>
+    <div class="story">
+      <h3>O que você pode fazer</h3>
+      <p>Os arquivos que você gera no FDG Maker são seus para imprimir, presentear e vender as peças impressas, inclusive em loja, feira e marketplace, sem pagar nada e sem precisar citar o site.</p>
+      <h3>O que você não pode fazer</h3>
+      <p>Não revenda nem distribua os arquivos STL ou 3MF gerados aqui como se fossem modelos digitais seus, e não crie um serviço que copie os geradores do site.</p>
+      <h3>Marca e código</h3>
+      <p>O nome FDG Maker, o logotipo, o código do site e os textos pertencem ao FDG Maker. As fontes usadas nos modelos têm licença aberta (SIL Open Font License) e podem ser usadas em peças comerciais.</p>
+      <h3>Conteúdo de terceiros</h3>
+      <p>Se você colocar no modelo uma marca, personagem ou imagem de outra pessoa, a autorização para usar esse conteúdo é responsabilidade sua.</p>
+      <p class="muted">Atualizado em 15 de novembro de 2026.</p>
+    </div>
+  </div>
+</section>
+
+<section class="view" data-view="cookies" hidden>
+  <div class="wrap narrow">
+    <div class="ghead" style="padding-top:32px"><div><p class="eyebrow">Cookies</p><h1>Política de cookies</h1></div></div>
+    <div class="story">
+      <p>Cookies e armazenamento local são pequenos dados que o navegador guarda. O FDG Maker usa poucos, e nenhum deles identifica você pelo nome.</p>
+      <h3>Do próprio site</h3>
+      <p>Idioma, moeda, modelos salvos, recentes, miniaturas e valores das calculadoras ficam no armazenamento local do seu navegador. Eles não saem do seu computador. Para apagar, limpe os dados do site nas configurações do navegador.</p>
+      <h3>Anúncios (Google AdSense)</h3>
+      <p>O Google e seus parceiros usam cookies para exibir e medir anúncios, inclusive anúncios personalizados com base em visitas a este e a outros sites. Você pode desativar a personalização em adssettings.google.com.</p>
+      <h3>Estatísticas (Google Analytics)</h3>
+      <p>Usamos o Google Analytics para saber quantas pessoas visitam o site e quais modelos são mais usados. Os dados são agregados. Você pode bloquear com o complemento de desativação do Google Analytics ou com um bloqueador de rastreamento.</p>
+      <h3>Segurança e desempenho (Cloudflare)</h3>
+      <p>A Cloudflare, que hospeda o site, pode definir cookies técnicos para proteger contra ataques e medir o desempenho.</p>
+      <p class="muted">Atualizado em 15 de novembro de 2026.</p>
+    </div>
+  </div>
+</section>
+
+<section class="view" data-view="contato" hidden>
+  <div class="wrap narrow">
+    <div class="ghead" style="padding-top:32px"><div><p class="eyebrow">Contato</p><h1>Fale com a gente</h1><p class="muted">Sugestão de modelo, erro no site, parceria ou publicidade. Respondemos por e-mail.</p></div></div>
+    <form id="contactForm" class="cform" novalidate>
+      <div class="field"><label for="cf-nome">Nome</label><input id="cf-nome" name="nome" type="text" maxlength="80" autocomplete="name" required></div>
+      <div class="field"><label for="cf-email">E-mail</label><input id="cf-email" name="email" type="email" maxlength="120" autocomplete="email" required></div>
+      <div class="field"><label for="cf-assunto">Assunto</label><select id="cf-assunto" name="assunto"><option>Sugestão de modelo</option><option>Erro no site</option><option>Parceria ou publicidade</option><option>Outro assunto</option></select></div>
+      <div class="field"><label for="cf-msg">Mensagem</label><textarea id="cf-msg" name="msg" rows="6" maxlength="4000" required></textarea></div>
+      <div class="hpot" aria-hidden="true"><label for="cf-site">Site</label><input id="cf-site" name="site" type="text" tabindex="-1" autocomplete="off"></div>
+      <button class="btn primary" type="submit">Enviar mensagem</button>
+      <p class="note" id="cfNote" role="status"></p>
+    </form>
+    <div class="story" style="margin-top:28px">
+      <p>Prefere e-mail? Escreva para <b data-noi18n>contact@fdgmaker.com</b> <button class="btn sm ghost" type="button" id="cfCopy">Copiar</button></p>
+    </div>
+  </div>
+</section>
+
 
 <section class="view" data-view="ajuda" hidden>
   <div class="wrap">
@@ -680,7 +761,7 @@ footer .legal{border-top:1px solid var(--line);padding-block:16px;font-size:12.5
     <div><a class="logo" href="#inicio"><span class="wm"><b>FDG</b><span>MAKER</span></span></a><p class="note" style="margin-top:12px;max-width:34ch">Modelos 3D paramétricos para quem imprime, presenteia e vende.</p></div>
     <div><h4>Criar</h4><ul><li><a href="#modelos">Todos os modelos</a></li><li><a href="#ferramentas">Ferramentas</a></li><li><a href="#modelos" data-cat="natal">Natal 2026</a></li><li><a href="#modelos" data-cat="imagem">A partir de imagem</a></li></ul></div>
     <div><h4>Negócio</h4><ul><li><a href="#custos">Calculadora de custos</a></li><li><a href="#lucro">Lucro no marketplace</a></li><li><a href="#gratis">Por que é grátis</a></li></ul></div>
-    <div><h4>Ajuda</h4><ul><li><a href="#ajuda">Perguntas frequentes</a></li><li><a href="#salvos">Salvos e recentes</a></li><li><a href="#apoiar">Pague um café</a></li><li><a href="#privacidade">Política de privacidade</a></li></ul></div>
+    <div><h4>Ajuda</h4><ul><li><a href="#ajuda">Perguntas frequentes</a></li><li><a href="#salvos">Salvos e recentes</a></li><li><a href="#apoiar">Pague um café</a></li><li><a href="#contato">Contato</a></li><li><a href="#privacidade">Política de privacidade</a></li><li><a href="#termos">Termos de uso</a></li><li><a href="#licenca">Licença de uso</a></li><li><a href="#cookies">Cookies</a></li></ul></div>
   </div>
   <div class="wrap legal"><span>© 2026 FDG Maker</span><span>Arquivos processados no seu navegador.</span></div>
 </footer>
@@ -3257,8 +3338,8 @@ function showView(v){currentView=v;document.querySelectorAll("[data-view]").forE
 function route(){
   const h=decodeURIComponent(location.hash.slice(1))||"inicio";
   if(h.startsWith("m-")&&byId[h.slice(2)]){openItem(byId[h.slice(2)]);scrollTo(0,0);document.title=tr(byId[h.slice(2)].name)+" · FDG Maker";return}
-  const v=h==="letra-caixa"?"letracaixa":["inicio","modelos","ferramentas","custos","lucro","gratis","ajuda","salvos","apoiar","privacidade"].includes(h)?h:"inicio";
-  showView(v);document.title=v==="inicio"?"FDG Maker — "+tr("modelos 3D sob medida"):tr({modelos:"Modelos",ferramentas:"Ferramentas",custos:"Calculadora de custos",lucro:"Lucro no marketplace",gratis:"Por que é grátis",apoiar:"Pague um café",ajuda:"Ajuda",salvos:"Salvos",letracaixa:"Letra caixa com LED",privacidade:"Política de privacidade"}[v])+" · FDG Maker";
+  const v=h==="letra-caixa"?"letracaixa":["inicio","modelos","ferramentas","custos","lucro","gratis","ajuda","salvos","apoiar","privacidade","termos","licenca","cookies","contato"].includes(h)?h:"inicio";
+  showView(v);document.title=v==="inicio"?"FDG Maker — "+tr("modelos 3D sob medida"):tr({modelos:"Modelos",ferramentas:"Ferramentas",custos:"Calculadora de custos",lucro:"Lucro no marketplace",gratis:"Por que é grátis",apoiar:"Pague um café",ajuda:"Ajuda",salvos:"Salvos",letracaixa:"Letra caixa com LED",privacidade:"Política de privacidade",termos:"Termos de uso",licenca:"Licença de uso",cookies:"Política de cookies",contato:"Contato"}[v])+" · FDG Maker";
   if(v==="inicio")renderHome();else if(v==="modelos")renderCatalog();else if(v==="ferramentas")renderTools();else if(v==="custos")renderCost();else if(v==="lucro")renderProfit();else if(v==="salvos")renderSaved();else if(v==="apoiar")renderSupport();
   scrollTo(0,0);
 }
@@ -3386,6 +3467,18 @@ $("#share").onclick=async()=>{const s=state[cur.id],o={},ns=NOSHARE[cur.id]||[];
   try{await navigator.clipboard.writeText(u);toast("Link copiado")}catch(e){$("#dlNote").textContent=u}};
 try{const q=new URLSearchParams(location.search),m=q.get("m"),pp=q.get("p");
   if(m&&byId[m]&&pp){const o=JSON.parse(decodeURIComponent(escape(atob(pp)))),d=defaults(byId[m]);for(const p of byId[m].params)if(p.k&&p.t!=="file"&&p.t!=="batch"&&o[p.k]!==undefined){const v=cleanShared(p,o[p.k],d[p.k]);if(v!==undefined)d[p.k]=v}state[m]=d}}catch(e){}
+
+
+/* ================= CONTATO ================= */
+{const f=$("#contactForm"),note=$("#cfNote"),t0=Date.now();
+  $("#cfCopy").onclick=async()=>{try{await navigator.clipboard.writeText("contact@fdgmaker.com");toast("E-mail copiado")}catch(e){toast("Selecione o e-mail e copie.")}};
+  f.onsubmit=async e=>{e.preventDefault();const d=Object.fromEntries(new FormData(f));
+    if(!d.nome.trim()||!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.email)||d.msg.trim().length<5){note.textContent="Preencha nome, e-mail válido e mensagem.";return}
+    const b=f.querySelector("button");b.disabled=true;note.textContent="Enviando…";
+    try{const r=await fetch("/api/contact",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({...d,t:Date.now()-t0})});const j=await r.json().catch(()=>({}));
+      if(r.ok&&j.ok){f.reset();note.textContent="Mensagem enviada. Obrigado! Respondemos em breve."}else note.textContent=j.error==="rate"?"Aguarde um minuto e tente de novo.":"Não foi possível enviar agora. Escreva para contact@fdgmaker.com."}
+    catch(err){note.textContent="Não foi possível enviar agora. Escreva para contact@fdgmaker.com."}
+    b.disabled=false}}
 
 /* ================= DESENHO À MÃO E PERFIL ================= */
 const pads={},padOpen={};
