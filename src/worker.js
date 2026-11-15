@@ -19,17 +19,18 @@ async function contact(req, env) {
   const ip = req.headers.get("cf-connecting-ip") || "?", now = Date.now(), last = recent.get(ip) || 0;
   if (now - last < 60000) return json({ ok: false, error: "rate" }, 429);
   recent.set(ip, now); if (recent.size > 5000) recent.clear();
-  const to = env.CONTACT_TO, from = "site@fdgmaker.com";
-  if (!to || !env.MAIL) return json({ ok: false, error: "config" }, 500);
+  const tos = String(env.CONTACT_TO || "contact@fdgmaker.com").split(",").map(x => x.trim()).filter(Boolean), from = "site@fdgmaker.com";
+  if (!env.MAIL) return json({ ok: false, error: "config" }, 500);
   const body = `Nome: ${nome}\nE-mail: ${email}\nAssunto: ${assunto}\nPaís: ${req.headers.get("cf-ipcountry") || "?"}\n\n${msg}\n`;
   const raw = [
-    `From: FDG Maker <${from}>`, `To: <${to}>`, `Reply-To: ${hdr(nome)} <${email}>`,
+    `From: FDG Maker <${from}>`, `To: ${tos.map(t => "<" + t + ">").join(", ")}`, `Reply-To: ${hdr(nome)} <${email}>`,
     `Subject: ${hdr("[FDG Maker] " + assunto + " — " + nome)}`,
     `Message-ID: <${crypto.randomUUID()}@fdgmaker.com>`, `Date: ${new Date().toUTCString()}`,
     "MIME-Version: 1.0", "Content-Type: text/plain; charset=utf-8", "Content-Transfer-Encoding: base64", "", b64(body),
   ].join("\r\n");
-  try { await env.MAIL.send(new EmailMessage(from, to, raw)); } catch (e) { return json({ ok: false, error: "send" }, 502); }
-  return json({ ok: true });
+  let sent = 0;
+  for (const to of tos) { try { await env.MAIL.send(new EmailMessage(from, to, raw)); sent++; } catch (e) {} }
+  return sent ? json({ ok: true }) : json({ ok: false, error: "send" }, 502);
 }
 
 export default {
