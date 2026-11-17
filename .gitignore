@@ -1,0 +1,20 @@
+# Estado e arquivos temporários do Wrangler / Miniflare
+.wrangler/
+.dev.vars
+.dev.vars.*
+# Credenciais e variáveis locais
+.env
+.env.*
+*.pem
+*.key
+# Dependências e builds locais
+node_modules/
+dist/
+.cache/
+# Sistema e editores
+.DS_Store
+Thumbs.db
+*.log
+*.swp
+.vscode/
+.idea/
