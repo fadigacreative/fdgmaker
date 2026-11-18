@@ -816,6 +816,8 @@ footer .legal{border-top:1px solid var(--line);padding-block:16px;font-size:12.5
 const $=s=>document.querySelector(s);
 const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const safeImg=u=>typeof u==="string"&&/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+\/=]+$/.test(u)?u:"";
+const safeColor=c=>typeof c==="string"&&/^#[0-9a-fA-F]{6}$/.test(c)?c:"#888888";
 const LS={get(k,d){try{const v=localStorage.getItem("fatia:"+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem("fatia:"+k,JSON.stringify(v))}catch(e){}}};
 const toastEl=$("#toast");let toastT=0;
 function toast(m){toastEl.textContent=m;toastEl.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>toastEl.classList.remove("show"),2200)}
@@ -838,7 +840,7 @@ const brl=v=>{try{return v.toLocaleString(LOC,{style:"currency",currency:CUR})}c
 const PATTERNS=["{0} itens","{0} ajustes","Resultados para “{0}”","{0} triângulos","{0} arquivos no download (até 100). A prévia mostra o texto do campo acima.","Baixar lote ({0})","Gerando {0} de {1}…","Usar custo da calculadora ({0})",
   "Para ter {0}% de margem, venda por pelo menos {1}.","{0} modelos · {1} ferramentas · {2} fontes · lote de nomes · 100% grátis","Ferramenta · {0}","Salvar {0}","Cor de {0}","Maior que a mesa de {0} mm","mesa {0} mm","{0} · FDG Maker","Cabe fita de {0} mm","{0} cm² (use suporte)","{0} de {1} mm","Escolha pelo menos um corte dentro da altura da peça ({0} mm).","Na primeira camada acima de {0} mm","A {0} mm da base do objeto"]
   .map(k=>({k,re:new RegExp("^"+k.replace(/[.*+?^$()|[\]\\]/g,"\\$&").replace(/\{\d\}/g,"(.+?)")+"$")}));
-const MISS=new Set();window.__miss=MISS;
+const MISS=new Set();
 function tr(s){
   if(LANG==="pt"||!s)return s;const d=DICT[LANG];if(!d)return s;const k=s.trim().replace(/\s+/g," ");if(!k)return s;let o=d[k];
   if(o==null)for(const p of PATTERNS){const m=p.re.exec(k);if(m&&d[p.k]!=null){o=d[p.k].replace(/\{(\d)\}/g,(_,i)=>tr(m[+i+1]));break}}
@@ -3183,7 +3185,7 @@ let TR=null;const thumbCache={};const thumbQ=[];let thumbBusy=false;
 function thumbRenderer(){if(TR||!hasGL)return TR;const r=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});r.setPixelRatio(1);r.setSize(420,280,false);r.setClearColor(0x000000,0);TR={r,scene:makeScene(),cam:new THREE.PerspectiveCamera(30,1.5,1,6000)};return TR}
 const isDark=()=>{const t=document.documentElement.dataset.theme;return t?t==="dark":matchMedia("(prefers-color-scheme: dark)").matches};
 function thumbKey(id){return "thumb15:"+id+":"+(isDark()?"d":"l")}
-function requestThumb(id){const k=thumbKey(id);if(thumbCache[k])return thumbCache[k];const st=LS.get(k,null);if(st){thumbCache[k]=st;return st}if(!thumbQ.includes(id))thumbQ.push(id);pumpThumbs();return null}
+function requestThumb(id){const k=thumbKey(id);if(thumbCache[k])return thumbCache[k];const st=safeImg(LS.get(k,null));if(st){thumbCache[k]=st;return st}if(!thumbQ.includes(id))thumbQ.push(id);pumpThumbs();return null}
 function sweepThumbs(){document.querySelectorAll("img[data-thumb]").forEach(im=>{const u=thumbCache[thumbKey(im.dataset.thumb)];if(!u)return;if(im.getAttribute("src")!==u)im.src=u;im.hidden=false;const ph=im.nextElementSibling;if(ph&&ph.classList.contains("ph"))ph.remove()})}
 function pumpThumbs(){if(!thumbQ.length)setTimeout(sweepThumbs,60);if(thumbBusy||!thumbQ.length||!hasGL)return;thumbBusy=true;const id=thumbQ.shift();
   setTimeout(async()=>{try{const it=byId[id];const parts=await it.build(defaults(it));const st=prepParts(parts);const t=thumbRenderer();setMatColors(it.palette||defPal());
@@ -3209,7 +3211,7 @@ let saved=new Set(LS.get("saved",[]));let recent=LS.get("recent",[]);
 function tagHTML(t){const cls=t==="novo"?"novo":t==="beta"?"beta":"";return `<span class="tag ${cls}">${esc(t)}</span>`}
 function card(it){
   const url=requestThumb(it.id);const on=saved.has(it.id);
-  return `<article class="mcard"><a class="thumb" href="#m-${it.id}" aria-label="${esc(it.name)}"><img alt="" data-thumb="${it.id}" ${url?`src="${url}"`:"hidden"}>${url?"":'<span class="ph">'+svgI(it.icon||"cube")+"</span>"}<span class="tagrow">${it.tags.filter(t=>t==="novo"||t==="beta").map(tagHTML).join("")}</span></a>
+  return `<article class="mcard"><a class="thumb" href="#m-${it.id}" aria-label="${esc(it.name)}"><img alt="" data-thumb="${it.id}" ${url?`src="${esc(safeImg(url))}"`:"hidden"}>${url?"":'<span class="ph">'+svgI(it.icon||"cube")+"</span>"}<span class="tagrow">${it.tags.filter(t=>t==="novo"||t==="beta").map(tagHTML).join("")}</span></a>
   <div class="body"><p class="eyebrow">${it.kind==="ferramenta"?"Ferramenta · ":""}${esc(catName(it.cats[0]))}</p><h3><a href="#m-${it.id}">${esc(it.name)}</a></h3><p class="desc">${esc(it.desc)}</p>
   <div class="row"><span class="tagrow">${it.tags.filter(t=>t!=="novo"&&t!=="beta").map(tagHTML).join("")||`<span class="tag">${it.params.filter(p=>p.k).length} ajustes</span>`}</span><button class="save" type="button" data-save="${it.id}" aria-pressed="${on}" aria-label="Salvar ${esc(it.name)}">${svgI("heart")}</button></div></div></article>`;
 }
@@ -3226,7 +3228,7 @@ function toggleSave(id){if(saved.has(id))saved.delete(id);else saved.add(id);LS.
 function renderHome(){
   const models=ITEMS.filter(i=>i.kind==="modelo").length,tools=ITEMS.filter(i=>i.kind==="ferramenta").length+2;
   $("#facts").textContent=`${models} modelos · ${tools} ferramentas · ${Object.keys(FONTS).length} fontes · lote de nomes · 100% grátis`;
-  $("#collage").innerHTML=["letra-balao","litofania","qr","engrenagem"].map(id=>{const it=byId[id],u=requestThumb(id);return `<a href="#m-${id}"><img alt="" data-thumb="${id}" ${u?`src="${u}"`:"hidden"}>${u?"":'<span class="ph">'+svgI("cube")+"</span>"}<span>${esc(it.name)}</span></a>`}).join("");
+  $("#collage").innerHTML=["letra-balao","litofania","qr","engrenagem"].map(id=>{const it=byId[id],u=requestThumb(id);return `<a href="#m-${id}"><img alt="" data-thumb="${id}" ${u?`src="${esc(safeImg(u))}"`:"hidden"}>${u?"":'<span class="ph">'+svgI("cube")+"</span>"}<span>${esc(it.name)}</span></a>`}).join("");
   $("#homeNatal").innerHTML=ITEMS.filter(i=>i.cats.includes("natal")).map(card).join("");
   $("#homeTools").innerHTML=ITEMS.filter(i=>i.kind==="ferramenta").map(toolCard).join("");
   $("#homeCats").innerHTML=CATS.map(([id,n])=>`<a class="cat" href="#modelos" data-cat="${id}"><b>${esc(n)}</b><span>${ITEMS.filter(i=>i.cats.includes(id)).length}</span></a>`).join("");
@@ -3348,7 +3350,7 @@ function renderEstimate(st){const e=estimate(st),c=costOf(Object.assign({},cost,
   costFromModel={peso:+e.grams.toFixed(1),tempo:+e.hours.toFixed(2)}}
 let costFromModel=null;
 const fmtH=h=>{const hh=Math.floor(h),mm=Math.round((h-hh)*60);return `${hh} h ${String(mm).padStart(2,"0")} min`};
-function fieldsHTML(defs,vals,prefix){return defs.map(f=>f.length===1?`<div class="fieldset-title">${esc(f[0])}</div>`:`<div class="field"><label for="${prefix}${f[0]}">${esc(f[1])}</label><input id="${prefix}${f[0]}" type="number" step="${f[3]}" min="0" value="${vals[f[0]]}"></div>`).join("")}
+function fieldsHTML(defs,vals,prefix){return defs.map(f=>f.length===1?`<div class="fieldset-title">${esc(f[0])}</div>`:`<div class="field"><label for="${prefix}${f[0]}">${esc(f[1])}</label><input id="${prefix}${f[0]}" type="number" step="${f[3]}" min="0" value="${esc(Number.isFinite(+vals[f[0]])?+vals[f[0]]:0)}"></div>`).join("")}
 function renderCost(){
   if(costFromModel){cost.peso=costFromModel.peso;cost.tempo=costFromModel.tempo;costFromModel=null}
   $("#costFields").innerHTML=fieldsHTML(COST_FIELDS,cost,"c-");
@@ -3415,7 +3417,7 @@ const xmlEsc=s=>String(s).replace(/[<>&"]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp
 function model3mf(parts,colored,cols,title){
   const o=['<?xml version="1.0" encoding="UTF-8"?>\n<model unit="millimeter" xml:lang="en-US" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02">\n<metadata name="Application">FDG Maker</metadata>\n<metadata name="Title">'+xmlEsc(title)+'</metadata>\n<resources>\n'];
   const used=[...new Set(parts.map(p=>p.c))];
-  if(colored)o.push('<basematerials id="1">'+used.map((c,i)=>`<base name="Cor ${i+1}" displaycolor="${(cols[c]||"#888888").toUpperCase()}FF"/>`).join("")+'</basematerials>\n');
+  if(colored)o.push('<basematerials id="1">'+used.map((c,i)=>`<base name="Cor ${i+1}" displaycolor="${safeColor(cols[c]).toUpperCase()}FF"/>`).join("")+'</basematerials>\n');
   parts.forEach((p,pi)=>{
     const map=new Map(),a=p.pos,vs=[],ts=[];let nv=0;const idx=new Int32Array(a.length/3);
     for(let i=0,j=0;i<a.length;i+=3,j++){const x=Math.round(a[i]*1e4),y=Math.round(a[i+1]*1e4),z=Math.round(a[i+2]*1e4),k=x+"_"+y+"_"+z;let id=map.get(k);if(id===undefined){id=nv++;map.set(k,id);vs.push(`<vertex x="${x/1e4}" y="${y/1e4}" z="${z/1e4}"/>`)}idx[j]=id}
@@ -3433,7 +3435,8 @@ async function pack3mf(parts,colored,cols,title){const te=new TextEncoder();
     {name:"3D/3dmodel.model",data:model3mf(parts,colored,cols,title)}]);
   return new Uint8Array(await blob.arrayBuffer());
 }
-window.__fatia={miss:()=>[...MISS],items:()=>ITEMS,dict:()=>DICT,pack3mf,vb:async(id,o)=>{const it=byId[id],p=Object.assign(defaults(it),o);let parts=await it.build(p);prepParts(parts);return parts},bt:async o=>{const it=byId.organizador,p=Object.assign(defaults(it),o),t0=performance.now();const parts=await it.build(p);const t1=performance.now();return {ms:Math.round(t1-t0),tris:parts.reduce((a,x)=>a+x.pos.length/9,0)}},go:id=>{location.hash="m-"+id},st:()=>state,run:()=>{renderParams();runFull()},get parts(){return lastParts},get pal(){return palOf(cur)}};
+/* ganchos de teste: só existem em arquivo local ou servidor local, nunca em produção */
+if(location.protocol==="file:"||/^(localhost|127\.0\.0\.1)$/.test(location.hostname))window.__fatia={miss:()=>[...MISS],items:()=>ITEMS,dict:()=>DICT,pack3mf,stl,vb:async(id,o)=>{const it=byId[id],p=Object.assign(defaults(it),o);let parts=await it.build(p);prepParts(parts);return parts},bt:async o=>{const it=byId.organizador,p=Object.assign(defaults(it),o),t0=performance.now();const parts=await it.build(p);const t1=performance.now();return {ms:Math.round(t1-t0),tris:parts.reduce((a,x)=>a+x.pos.length/9,0)}},go:id=>{location.hash="m-"+id},st:()=>state,run:()=>{renderParams();runFull()},get parts(){return lastParts},get pal(){return palOf(cur)}};
 
 /* ---- entrega: direto no site hospedado, em .zip dentro do Claude ---- */
 const STANDALONE=!window.claude;let downloads=null,FMT=LS.get("fmt","stl");if(!["stl","3mf","3mfc"].includes(FMT))FMT="stl";
@@ -3470,7 +3473,7 @@ const FIL=["#FFFFFF","#1B1B1B","#8E9AA6","#D32F2F","#D6FF27","#F2B632","#2E9D4E"
 function renderParts(parts){
   const cols=palOf(cur);
   const seen=new Set(),uniq=parts.filter(p=>!seen.has(p.c)&&seen.add(p.c));
-  $("#gParts").innerHTML=`<div class="pchips">`+uniq.map(p=>`<label class="pchip" title="${nf(parts.filter(q=>q.c===p.c).reduce((a,q)=>a+q.vol,0)/1000)} cm³"><input type="color" class="sw" data-c="${p.c}" value="${cols[p.c]}" aria-label="Cor de ${esc(p.name)}"><span data-noi18n>${esc(tr(p.name))}</span></label>`).join("")+`</div>`
+  $("#gParts").innerHTML=`<div class="pchips">`+uniq.map(p=>`<label class="pchip" title="${nf(parts.filter(q=>q.c===p.c).reduce((a,q)=>a+q.vol,0)/1000)} cm³"><input type="color" class="sw" data-c="${p.c}" value="${safeColor(cols[p.c])}" aria-label="Cor de ${esc(p.name)}"><span data-noi18n>${esc(tr(p.name))}</span></label>`).join("")+`</div>`
     +`<div class="swatches" data-noi18n>${FIL.map(c=>`<button type="button" class="swb" style="background:${c}" data-col="${c}" aria-label="${c}"></button>`).join("")}</div>`;
   if(!parts.some(p=>p.c===actC))actC=parts[0].c;
   $("#gPartsNote").textContent="";$("#gPartsNote").hidden=true;
@@ -3497,15 +3500,16 @@ function cleanShared(p,v,d){try{
   if(p.t==="grid")return cleanGrid(v,0,{n:0});
   if(p.t==="profile"){if(!Array.isArray(v)||v.length!==d.length)return;const a=v.map(Number);return a.every(x=>Number.isFinite(x)&&x>=0&&x<=1.5)?a:undefined}
   if(p.t==="check")return typeof v==="boolean"?v:undefined;
-  if(p.t==="text")return typeof v==="string"?v.slice(0,p.max||40):undefined;
+  if(p.t==="text")return typeof v==="string"?v.replace(/[\u0000-\u001f\u007f]/g," ").slice(0,p.max||40):undefined;
+  if(p.t==="color")return typeof v==="string"&&/^#[0-9a-fA-F]{6}$/.test(v)?v:undefined;
   if(p.t==="select"||p.t==="seg"){const opts=typeof p.opts==="function"?p.opts():p.opts;if(p.fonts)return typeof v==="string"&&FONTS[v]?v:undefined;return opts.some(o=>String(o[0])===String(v))?(typeof d==="number"?Number(v):v):undefined}
-  if(typeof d==="number"){const n=Number(v);if(!Number.isFinite(n))return;return Math.max(p.min??-Infinity,Math.min(p.max??Infinity,n))}
-  return typeof v===typeof d&&typeof v!=="object"?v:undefined}catch(e){return undefined}}
+  if(typeof d==="number"){const n=Number(v);if(!Number.isFinite(n))return;return Math.max(p.min??-1e4,Math.min(p.max??1e4,n))}
+  return typeof v===typeof d&&typeof v!=="object"?(typeof v==="string"?v.slice(0,200):v):undefined}catch(e){return undefined}}
 const NOSHARE={qr:["senha","chave","nome","cidade"]};
 $("#share").onclick=async()=>{const s=state[cur.id],o={},ns=NOSHARE[cur.id]||[];for(const p of cur.params)if(p.k&&p.t!=="file"&&p.t!=="batch"&&!ns.includes(p.k))o[p.k]=s[p.k];
   const u=location.href.split(/[?#]/)[0]+"?m="+cur.id+"&p="+encodeURIComponent(btoa(unescape(encodeURIComponent(JSON.stringify(o)))))+"#m-"+cur.id;
   try{await navigator.clipboard.writeText(u);toast("Link copiado")}catch(e){$("#dlNote").textContent=u}};
-try{const q=new URLSearchParams(location.search),m=q.get("m"),pp=q.get("p");
+try{const q=new URLSearchParams(location.search),m=q.get("m"),pp0=q.get("p"),pp=pp0&&pp0.length<=16000?pp0:null;
   if(m&&byId[m]&&pp){const o=JSON.parse(decodeURIComponent(escape(atob(pp)))),d=defaults(byId[m]);for(const p of byId[m].params)if(p.k&&p.t!=="file"&&p.t!=="batch"&&o[p.k]!==undefined){const v=cleanShared(p,o[p.k],d[p.k]);if(v!==undefined)d[p.k]=v}state[m]=d}}catch(e){}
 
 
@@ -3589,7 +3593,7 @@ function renderSupport(){const c=[],card=(eye,title,txt,href,btn,pro)=>`<div cla
     $("#pixCode").textContent=code;$("#pixCopy").onclick=async()=>{try{await navigator.clipboard.writeText(code);toast("Código Pix copiado")}catch(e){toast("Selecione o código e copie.")}}}
 }
 /* chaves de texto para tradução (uso em desenvolvimento) */
-window.__fatiaKeys=()=>{const k=new Set(),add=s=>{if(typeof s==="string"&&s.trim())k.add(s.trim().replace(/\s+/g," "))};
+if(window.__fatia)window.__fatiaKeys=()=>{const k=new Set(),add=s=>{if(typeof s==="string"&&s.trim())k.add(s.trim().replace(/\s+/g," "))};
   for(const it of ITEMS){add(it.name);add(it.desc);it.tags.forEach(add);Object.entries(it.tips).forEach(([a,b])=>{add(a);add(b)});for(const p of it.params){add(p.label);add(p.sampleName);const o=typeof p.opts==="function"?p.opts():p.opts;if(o)o.forEach(x=>add(x[1]))}}
   CATS.forEach(c=>add(c[1]));SOON.forEach(s=>{add(s[0]);add(s[1])});Object.values(SHAPES).forEach(s=>add(s.n));Object.values(FONTS).forEach(f=>add(f.n));Object.values(HINTS).forEach(add);PATTERNS.forEach(p=>add(p.k));
   [...COST_FIELDS,...PROFIT_FIELDS].forEach(f=>add(f.length===1?f[0]:f[1]));
