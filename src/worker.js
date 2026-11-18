@@ -7,13 +7,32 @@ const b64 = (s) => { const u = new TextEncoder().encode(s); let bin = ""; for (c
 const hdr = (s) => "=?UTF-8?B?" + btoa(String.fromCharCode(...new TextEncoder().encode(s))) + "?=";
 const clean = (s, n) => String(s || "").replace(/[\r\n]+/g, " ").trim().slice(0, n);
 const recent = new Map();
+const MAX_BODY = 20000;
+/* lê o corpo com limite real de bytes, mesmo sem Content-Length (envio em partes) */
+async function readLimited(req, max) {
+  if (!req.body) return "";
+  const reader = req.body.getReader(), parts = []; let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > max) { try { await reader.cancel(); } catch {} return null; }
+    parts.push(value);
+  }
+  const all = new Uint8Array(size); let o = 0; for (const p of parts) { all.set(p, o); o += p.byteLength; }
+  return new TextDecoder().decode(all);
+}
 
 async function contact(req, env) {
   if (req.method !== "POST") return json({ ok: false, error: "method" }, 405);
   const origin = req.headers.get("origin") || "";
   if (!ORIGINS.includes(origin)) return json({ ok: false, error: "origin" }, 403);
-  if ((+req.headers.get("content-length") || 0) > 20000) return json({ ok: false, error: "size" }, 413);
-  let d; try { d = await req.json(); } catch { return json({ ok: false, error: "json" }, 400); }
+  if (!(req.headers.get("content-type") || "").toLowerCase().startsWith("application/json")) return json({ ok: false, error: "type" }, 415);
+  if ((+req.headers.get("content-length") || 0) > MAX_BODY) return json({ ok: false, error: "size" }, 413);
+  const text = await readLimited(req, MAX_BODY);
+  if (text === null) return json({ ok: false, error: "size" }, 413);
+  let d; try { d = JSON.parse(text); } catch { return json({ ok: false, error: "json" }, 400); }
+  if (!d || typeof d !== "object" || Array.isArray(d)) return json({ ok: false, error: "json" }, 400);
   const nome = clean(d.nome, 80), email = clean(d.email, 120), assunto = clean(d.assunto, 60) || "Contato", msg = String(d.msg || "").slice(0, 4000).trim();
   if (d.site || (+d.t || 0) < 3000) return json({ ok: true }); // robô: finge sucesso
   if (!nome || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || msg.length < 5) return json({ ok: false, error: "invalid" }, 400);
